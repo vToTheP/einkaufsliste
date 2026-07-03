@@ -8,6 +8,17 @@ agenten-basierten Entwicklungs-Workflows ("Dark Factory").
 - **MVP-Persistenz:** `localStorage` (kein Backend)
 - **CI/Deploy:** GitHub Actions → GitHub Pages
 
+## Entwicklung
+
+```bash
+npm install
+npm run dev      # lokaler Dev-Server
+npm test         # Vitest
+npm run lint     # ESLint
+npm run build    # Produktions-Build (nach dist/)
+```
+
 ## Status
 
-🚧 In Aufbau — Häppchen 1 (Gerüst + CI) folgt.
+✅ Häppchen 1: Gerüst (Vite + React + PWA), CI (lint/test/build) und
+Pages-Deploy stehen. Nächster Schritt: Häppchen 2 (Items hinzufügen + `localStorage`).
