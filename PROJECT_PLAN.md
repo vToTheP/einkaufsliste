@@ -5,7 +5,12 @@
 > Niedrige Stakes sind Absicht — hier lernen wir, wie autonom die Fabrik läuft, bevor
 > Football Manager / MatterMind drankommen.
 >
-> **Stand:** 2026-07-02 · **Stack entschieden:** React + Vite als installierbare PWA
+> **Stand:** 2026-07-05 · **Stack:** React + Vite als installierbare PWA
+>
+> **Autoritativer, eingefrorener MVP-Scope:** [`docs/prd.md`](./docs/prd.md).
+> Zukunft: [`ROADMAP.md`](./ROADMAP.md). Agenten-Regeln: [`CLAUDE.md`](./CLAUDE.md).
+> Diese Datei bleibt der **Meta-/Pilot-Kontext** (warum, Lernziele) — die Slices selbst
+> werden als **GitHub-Issues** (#2–#5) getrackt, nicht mehr als „Häppchen".
 
 ---
 
@@ -31,21 +36,20 @@ minimal, jede Ausbaustufe = eigene Feature-Runde durch die Pipeline.
 
 ---
 
-## MVP = eine teilbare Einkaufsliste, auf dem iPhone als PWA installierbar
+## MVP-Slices (Details + Scope-Grenzen: `docs/prd.md` + die Issues)
 
-Zerlegt in PR-große Häppchen (Ziel: je ≤ 200 Zeilen, je 1 PR, CI grün = Pflicht):
+Je Slice = 1 Issue = 1 kleiner PR (Ziel ≤ 200 Zeilen, CI grün = Pflicht):
 
-| # | Häppchen | Inhalt |
-|---|----------|--------|
-| **1** | **Gerüst + CI** ⭐ | Vite+React-Setup, PWA-Manifest + Service-Worker-Grundgerüst, „leere Liste"-Ansicht, GitHub Actions (lint/test/build), Deploy auf GitHub Pages. |
-| 2 | Item hinzufügen | Eingabefeld + Liste rendern, State-Management, `localStorage`-Persistenz. |
-| 3 | Item abhaken | Item als erledigt markieren/entmarkieren (visuell + persistiert). |
-| 4 | Item bearbeiten/löschen | Editieren + Entfernen einzelner Items. |
-| 5 | Offline + Install | Service Worker fertig (Offline-Nutzung), „Zum Home-Bildschirm" auf iPhone verifiziert. |
+| Issue | Slice | Status |
+|-------|-------|--------|
+| #1 | Gerüst + CI + Pages-Deploy ⭐ | ✅ gemerged, live |
+| #2 | Item hinzufügen + `localStorage` | offen |
+| #3 | Item als erledigt markieren | offen |
+| #4 | Item entfernen + umbenennen | offen |
+| #5 | Offline + iPhone-Installation | offen |
 
-⭐ **Häppchen 1 ist DEIN Phase-5-Checkpoint** — die eine Stelle, die du bewusst genau anschaust:
-Fundament + CI-Gate müssen sitzen, sonst potenziert sich jeder spätere Fehler. Alles ab
-Häppchen 2 ist Kandidat für den autonomen (Cloud-)Lauf.
+⭐ **#1 war DEIN Phase-5-Checkpoint** — Fundament + CI-Gate genau angeschaut. Ab #2 sind die
+Slices Kandidaten für den autonomen (Cloud-)Lauf.
 
 ---
 
@@ -58,20 +62,21 @@ Häppchen 2 ist Kandidat für den autonomen (Cloud-)Lauf.
 - Review ≠ Self-Review: Ultrareview oder Copilot reviewt, Auto-fix bügelt CI/Kommentare,
   Vincent merged vom iPhone.
 
-## Feature-Roadmap nach MVP (grob, je eigene Pipeline-Runde)
+## Feature-Roadmap nach MVP
 
-1. Mehrere Listen / Kategorien.
-2. Kleines Backend + Geräte-Sync (Stack dann wählen: Node oder Java).
-3. Bestände von Items tracken.
-4. Rezepte + wöchentliche Essenspläne → generieren Einkaufsliste.
-5. Angebote von Läden einbeziehen.
-6. Smart-Home-Integration.
+Zukunfts-Features sind bewusst aus dem MVP herausgehalten → siehe [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
-## Nächste Schritte
+## Pilot-Fortschritt
 
-1. **Setup (~5 Min, Vincent):** `claude.ai/code` aktivieren + Claude GitHub App installieren.
-2. **Lokal (jetzt):** Häppchen 1 umsetzen (Gerüst + CI) — der Checkpoint zum Draufschauen.
-3. Häppchen 2 → erster **Cloud-Lauf** (läuft bei PC-aus, Monitoring am iPhone).
-4. **Messen:** Quota-Verbrauch/Häppchen, Qualität der autonomen Umsetzung, Eingriffs-Stellen.
+- ✅ **Setup:** Claude GitHub App, `gh` CLI, Node, `claude.ai/code` verbunden. Repo public.
+- ✅ **#1 (Gerüst + CI):** lokal gebaut, PR-Flow + CI + Pages-Deploy end-to-end bewiesen, live.
+- ✅ **Issue-Workflow:** MVP-Milestone, Issues #2–#5, PRD/ROADMAP/CLAUDE.md-Guardrails.
+- ⏭️ **Nächster echter Fabrik-Test:** **#2** als erster **Cloud-Lauf** (PC-aus, Monitoring am iPhone).
+
+## Woran wir den Cloud-Lauf messen
+
+Quota-Verbrauch pro Slice · Qualität der autonomen Umsetzung · hielt der Agent den Scope
+(kein Creep)? · wo musste doch eingegriffen werden? → sagt, ob Pro reicht oder Max nötig
+und wie „dark" die Factory realistisch wird.
