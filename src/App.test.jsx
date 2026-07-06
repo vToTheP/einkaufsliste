@@ -67,4 +67,40 @@ describe('App', () => {
 
     expect(screen.getByText('Butter')).toBeInTheDocument()
   })
+
+  it('markiert ein Item beim Tap als erledigt und wieder zurück', () => {
+    render(<App />)
+
+    addItem('Milch')
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Milch' })
+    expect(checkbox).not.toBeChecked()
+
+    fireEvent.click(checkbox)
+    expect(checkbox).toBeChecked()
+
+    fireEvent.click(checkbox)
+    expect(checkbox).not.toBeChecked()
+  })
+
+  it('persistiert den erledigt-Zustand in localStorage', () => {
+    render(<App />)
+
+    addItem('Brot')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Brot' }))
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(stored[0]).toMatchObject({ name: 'Brot', done: true })
+  })
+
+  it('stellt den erledigt-Zustand nach einem Reload wieder her', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify([{ id: '1', name: 'Käse', done: true }]),
+    )
+
+    render(<App />)
+
+    expect(screen.getByRole('checkbox', { name: 'Käse' })).toBeChecked()
+  })
 })
