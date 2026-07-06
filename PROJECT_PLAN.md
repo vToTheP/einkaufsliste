@@ -5,12 +5,12 @@
 > Niedrige Stakes sind Absicht — hier lernen wir, wie autonom die Fabrik läuft, bevor
 > Football Manager / MatterMind drankommen.
 >
-> **Stand:** 2026-07-05 · **Stack:** React + Vite als installierbare PWA
+> **Stand:** 2026-07-06 · **Stack:** React + Vite als installierbare PWA
 >
-> **Autoritativer, eingefrorener MVP-Scope:** [`docs/prd.md`](./docs/prd.md).
-> Zukunft: [`ROADMAP.md`](./ROADMAP.md). Agenten-Regeln: [`CLAUDE.md`](./CLAUDE.md).
-> Diese Datei bleibt der **Meta-/Pilot-Kontext** (warum, Lernziele) — die Slices selbst
-> werden als **GitHub-Issues** (#2–#5) getrackt, nicht mehr als „Häppchen".
+> **Rollen der Dokumente:** [`docs/prd.md`](./docs/prd.md) = eingefrorener MVP-Scope ·
+> [`ROADMAP.md`](./ROADMAP.md) = Zukunft · [`CLAUDE.md`](./CLAUDE.md) = Agenten-Regeln ·
+> **GitHub Issues/Milestone** = Live-Status · diese Datei = **Pilot-Journal**
+> (warum es dieses Projekt gibt, was die Fabrik beweisen soll, Messergebnisse).
 
 ---
 
@@ -36,20 +36,13 @@ minimal, jede Ausbaustufe = eigene Feature-Runde durch die Pipeline.
 
 ---
 
-## MVP-Slices (Details + Scope-Grenzen: `docs/prd.md` + die Issues)
+## MVP-Slices
 
-Je Slice = 1 Issue = 1 kleiner PR (Ziel ≤ 200 Zeilen, CI grün = Pflicht):
+Je Slice = 1 Issue = 1 kleiner PR (CI grün = Pflicht). Scope: `docs/prd.md`.
+Live-Status: [Milestone MVP](https://github.com/vToTheP/einkaufsliste/milestone/1).
 
-| Issue | Slice | Status |
-|-------|-------|--------|
-| #1 | Gerüst + CI + Pages-Deploy ⭐ | ✅ gemerged, live |
-| #2 | Item hinzufügen + `localStorage` | offen |
-| #3 | Item als erledigt markieren | offen |
-| #4 | Item entfernen + umbenennen | offen |
-| #5 | Offline + iPhone-Installation | offen |
-
-⭐ **#1 war DEIN Phase-5-Checkpoint** — Fundament + CI-Gate genau angeschaut. Ab #2 sind die
-Slices Kandidaten für den autonomen (Cloud-)Lauf.
+**#1 (Gerüst + CI) war der Phase-5-Checkpoint** — Fundament + CI-Gate bewusst manuell
+gebaut und genau angeschaut. Alle weiteren Slices laufen autonom durch die Fabrik.
 
 ---
 
@@ -68,15 +61,26 @@ Zukunfts-Features sind bewusst aus dem MVP herausgehalten → siehe [`ROADMAP.md
 
 ---
 
-## Pilot-Fortschritt
+## Pilot-Journal: was die Fabrik bisher bewiesen hat
 
-- ✅ **Setup:** Claude GitHub App, `gh` CLI, Node, `claude.ai/code` verbunden. Repo public.
-- ✅ **#1 (Gerüst + CI):** lokal gebaut, PR-Flow + CI + Pages-Deploy end-to-end bewiesen, live.
-- ✅ **Issue-Workflow:** MVP-Milestone, Issues #2–#5, PRD/ROADMAP/CLAUDE.md-Guardrails.
-- ⏭️ **Nächster echter Fabrik-Test:** **#2** als erster **Cloud-Lauf** (PC-aus, Monitoring am iPhone).
+- ✅ **Setup (2026-07-03):** Claude GitHub App, `gh` CLI, Node, `claude.ai/code` verbunden.
+- ✅ **#1 Gerüst + CI (2026-07-03):** lokal gebaut, PR-Flow + CI + Pages-Deploy end-to-end, live.
+- ✅ **Issue-Workflow (2026-07-05):** MVP-Milestone, Issues, PRD/ROADMAP/CLAUDE.md-Guardrails.
+- ✅ **Erster AFK-Cloud-Lauf (2026-07-05, Issue #2):** autonom, scope-treu dank CLAUDE.md,
+  **~6% Session-Quota** pro Slice. PC aus, Monitoring am iPhone.
+- ✅ **Ein-Befehl-Start (2026-07-06, Issue #3):** `/implement-next` wählt das Issue selbst
+  (Prio/Ready/Blocked), TDD nach `tdd`-Skill sichtbar red→green, wieder ~6% Session /
+  ~1% Wochen-Quota. **Fazit: Pro-Plan trägt diese Kadenz locker.**
+- ✅ **Selbstkorrektur der Fabrik (2026-07-06):** Review-Finding aus PR #10 (Lockfile-Rauschen
+  durch `npm install` auf der Cloud-VM) → neue `npm ci`-Regel in CLAUDE.md.
 
-## Woran wir den Cloud-Lauf messen
+## Messpunkte für weitere Läufe
 
-Quota-Verbrauch pro Slice · Qualität der autonomen Umsetzung · hielt der Agent den Scope
-(kein Creep)? · wo musste doch eingegriffen werden? → sagt, ob Pro reicht oder Max nötig
-und wie „dark" die Factory realistisch wird.
+Quota-Verbrauch pro Slice · Scope-Treue (kein Creep) · TDD-Qualität · wo musste eingegriffen
+werden? → kalibriert, wie „dark" die Factory wird und wann Max statt Pro nötig wäre.
+
+## Prozess-Ausbaustufen (nach MVP)
+
+Playwright-QA in CI (inkl. visueller Tests) · Ultrareview/Copilot-Review-Stufe ·
+Design-AFK via `needs:design`-Label + Routine · Nacht-Routine für `/implement-next` ·
+Auto-Issues aus Fehler-Tracking (erst mit Backend). Details: Memory/Session-Historie.
