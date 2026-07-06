@@ -1,5 +1,9 @@
 # PRD — Einkaufsliste (MVP)
 
+> ✅ **SHIPPED 2026-07-06.** Alle Slices geliefert, App live unter
+> https://vtothep.github.io/einkaufsliste/. Dieses PRD ist damit erfüllt und wird nicht
+> mehr geändert (Archiv). Die nächste Ausbaustufe bekommt ein eigenes PRD.
+>
 > **Eingefrorener MVP-Scope.** Zukunfts-Features stehen in [`../ROADMAP.md`](../ROADMAP.md)
 > und sind hier bewusst ausgeschlossen. Diese Trennung ist die zentrale Leitplanke gegen
 > Scope-Vermischung — MVP hier, Vision dort.
