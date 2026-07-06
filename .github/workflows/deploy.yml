@@ -41,3 +41,14 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+      # Das Pages-Backend antwortet gelegentlich transient mit "Deployment failed,
+      # try again later" (beobachtet bei schnell aufeinanderfolgenden Merges, wenn
+      # die concurrency-Regel einen laufenden Deploy cancelt). Einmal kurz warten
+      # und erneut versuchen, bevor der Run als Fehler endet.
+      - name: Warten vor zweitem Versuch
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+      - name: Deploy (zweiter Versuch)
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
