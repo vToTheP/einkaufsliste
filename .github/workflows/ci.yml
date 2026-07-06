@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -28,7 +28,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Node + npm sind im Image gebündelt; Browser liegen unter
       # PLAYWRIGHT_BROWSERS_PATH — kein `playwright install` nötig.
       - run: npm ci
