@@ -54,7 +54,25 @@
 }
 
 .app__item {
-  padding: 0.75rem 1rem;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
+}
+
+.app__item-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+
+.app__check {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
+.app__item--done .app__item-name {
+  text-decoration: line-through;
+  color: var(--color-muted);
 }

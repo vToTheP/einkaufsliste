@@ -10,9 +10,11 @@ function loadItems() {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (item) => item && typeof item.id === 'string' && typeof item.name === 'string',
-    )
+    return parsed
+      .filter(
+        (item) => item && typeof item.id === 'string' && typeof item.name === 'string',
+      )
+      .map((item) => ({ ...item, done: item.done === true }))
   } catch {
     return []
   }
@@ -34,8 +36,16 @@ export default function App() {
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : String(Date.now()) + Math.random().toString(16).slice(2)
-    setItems((prev) => [...prev, { id, name }])
+    setItems((prev) => [...prev, { id, name, done: false }])
     setDraft('')
+  }
+
+  function toggleDone(id) {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, done: !item.done } : item,
+      ),
+    )
   }
 
   return (
@@ -63,8 +73,19 @@ export default function App() {
       ) : (
         <ul className="app__list">
           {items.map((item) => (
-            <li key={item.id} className="app__item">
-              {item.name}
+            <li
+              key={item.id}
+              className={`app__item${item.done ? ' app__item--done' : ''}`}
+            >
+              <label className="app__item-label">
+                <input
+                  className="app__check"
+                  type="checkbox"
+                  checked={item.done}
+                  onChange={() => toggleDone(item.id)}
+                />
+                <span className="app__item-name">{item.name}</span>
+              </label>
             </li>
           ))}
         </ul>
