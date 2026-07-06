@@ -36,5 +36,13 @@ Du setzt genau EIN Issue dieses Repos um. Wähle es selbstständig nach diesen R
 
 ## Nach dem PR
 
-Fasse kurz zusammen: gewähltes Issue, was umgesetzt wurde, Testabdeckung, was bewusst
-NICHT gemacht wurde. Markiere offene Fragen deutlich, statt sie stillschweigend zu entscheiden.
+- **Aktiviere sofort das PR-Monitoring (Auto-fix / `subscribe_pr_activity`) — nicht fragen,
+  machen.** Reagiere selbstständig auf CI-Failures und Review-Kommentare: Ursache
+  analysieren, Fix pushen, im PR kurz erklären. Nur bei Mehrdeutigkeit oder
+  architektonischen Fragen nachfragen.
+- **Warte das CI-Ergebnis ab, bevor du die Session als fertig betrachtest.** Ein PR mit
+  roter CI ist nicht „fertig". Denk daran: Die CI-Umgebung ist frisch — lokal vorhandene
+  Artefakte (z.B. `dist/`) existieren dort nicht.
+- Fasse kurz zusammen: gewähltes Issue, was umgesetzt wurde, Testabdeckung, was bewusst
+  NICHT gemacht wurde. Markiere offene Fragen deutlich, statt sie stillschweigend zu
+  entscheiden.
