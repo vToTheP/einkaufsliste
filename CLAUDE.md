@@ -32,7 +32,14 @@ keine horizontale Schicht.
 ## Qualitäts-Gates (vor jedem Push)
 
 - `npm run lint`, `npm test`, `npm run build` müssen grün sein.
-- Kleine, fokussierte PRs (Richtwert ≤ 200 Zeilen). Jeder PR referenziert sein Issue: `Closes #N`.
+- Kleine, fokussierte PRs. Richtwert ≤ 200 geänderte Zeilen (generierte Dateien wie
+  Lockfiles/Snapshots zählen nicht). **Das ist eine Planungs-Grenze, keine Qualitäts-Grenze:**
+  - Absehbar deutlich drüber? → Erst prüfen, ob sich das Issue in kleinere Slices teilen
+    lässt, und die Teilung als neue Issues vorschlagen — statt alles in einen PR zu packen.
+  - Slice nicht sinnvoll teilbar? → Richtwert überschreiten und kurz im PR begründen.
+    Tests, Fehlerbehandlung und Lesbarkeit werden **nie** gekürzt, um eine Zeilenzahl
+    zu treffen. Qualität gewinnt immer.
+- Jeder PR referenziert sein Issue: `Closes #N`.
 
 ## Never-auto-merge
 

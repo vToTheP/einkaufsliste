@@ -24,8 +24,11 @@ Du setzt genau EIN Issue dieses Repos um. Wähle es selbstständig nach diesen R
 - Es gelten alle Regeln aus `CLAUDE.md` — insbesondere: **nur** den Issue-Scope umsetzen,
   „Nicht Teil dieser Slice" ist bindend, bei Scope-Creep stoppen und Backlog-Issue anlegen,
   bei Mehrdeutigkeit nachfragen statt raten.
-- **TDD:** Schreibe zuerst Tests für die Akzeptanzkriterien des Issues, dann die Implementierung.
-  Bestehende Tests bleiben grün.
+- **TDD:** Arbeite nach dem `tdd`-Skill (`.claude/skills/tdd/SKILL.md`) — red → green,
+  eine vertikale Slice pro Zyklus, Tests an öffentlichen Seams. **AFK-Anpassung:** Die im
+  Skill geforderte Seam-Bestätigung durch den User gilt als erteilt — die zu testenden
+  Seams sind durch die **Akzeptanzkriterien des Issues** vorgegeben. Bestehende Tests
+  bleiben grün.
 - Qualitäts-Gates vor dem Push: `npm run lint`, `npm test`, `npm run build` müssen grün sein.
 - Öffne einen **kleinen, fokussierten PR** gegen `main` (Richtwert ≤ 200 Zeilen) mit
   `Closes #<Nr>` im Body. Übernimm den Abschnitt „Nicht Teil dieser Slice" in die
