@@ -73,6 +73,12 @@ Zukunfts-Features sind bewusst aus dem MVP herausgehalten → siehe [`ROADMAP.md
   ~1% Wochen-Quota. **Fazit: Pro-Plan trägt diese Kadenz locker.**
 - ✅ **Selbstkorrektur der Fabrik (2026-07-06):** Review-Finding aus PR #10 (Lockfile-Rauschen
   durch `npm install` auf der Cloud-VM) → neue `npm ci`-Regel in CLAUDE.md.
+- ✅ **MVP SHIPPED (2026-07-06):** #4 und #5 ebenfalls voll autonom (Cloud, `/implement-next`),
+  Milestone geschlossen, PWA live inkl. Offline- und iOS-Install-Support. **Alle 4 Fach-Slices
+  (#2–#5) ohne manuellen Code-Eingriff** — Vincents Rolle: Review + Merge.
+  Nebenbei gelernt: Desktop-App-Sessions laufen lokal (Permission-Prompts, kein AFK) —
+  Fabrik-Läufe immer als Cloud-Session starten. Ein Pages-Deploy schlug transient fehl
+  („try again later"), Folge-Deploy grün — unkritisch.
 
 ## Messpunkte für weitere Läufe
 
