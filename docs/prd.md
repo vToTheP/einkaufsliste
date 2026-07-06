@@ -17,11 +17,14 @@ Einzelperson, die unterwegs oder zuhause eine Einkaufsliste führt.
 
 | Slice | Fähigkeit | Issue |
 |-------|-----------|-------|
-| 1 | Gerüst (Vite+React+PWA), CI, Pages-Deploy | ✅ #1 (gemerged) |
+| 1 | Gerüst (Vite+React+PWA), CI, Pages-Deploy | #1 |
 | 2 | Items hinzufügen + anzeigen, `localStorage` | #2 |
 | 3 | Items als erledigt markieren/entmarkieren | #3 |
 | 4 | Items entfernen + umbenennen | #4 |
 | 5 | Offline-Fähigkeit + Installation auf iPhone | #5 |
+
+> Live-Status der Slices: [Milestone MVP](https://github.com/vToTheP/einkaufsliste/milestone/1)
+> — dieses Dokument beschreibt den Scope, nicht den Fortschritt.
 
 ## Explizit NICHT im MVP (→ ROADMAP.md)
 

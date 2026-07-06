@@ -27,5 +27,9 @@ npm run build    # Produktions-Build (nach dist/)
 
 ## Status
 
-✅ #1 Gerüst (Vite + React + PWA), CI (lint/test/build) und Pages-Deploy stehen.
-Live: https://vtothep.github.io/einkaufsliste/ · Offene MVP-Slices: #2–#5.
+**Live:** https://vtothep.github.io/einkaufsliste/ (Deploy bei jedem Merge auf `main`)
+
+Der aktuelle Arbeitsstand steht **nicht** hier (Docs veralten), sondern in GitHub:
+[Milestone MVP](https://github.com/vToTheP/einkaufsliste/milestone/1) ·
+[offene Issues](https://github.com/vToTheP/einkaufsliste/issues) ·
+[offene PRs](https://github.com/vToTheP/einkaufsliste/pulls)
