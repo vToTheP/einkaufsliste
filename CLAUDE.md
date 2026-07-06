@@ -32,6 +32,9 @@ keine horizontale Schicht.
 ## Qualitäts-Gates (vor jedem Push)
 
 - `npm run lint`, `npm test`, `npm run build` müssen grün sein.
+- **`npm ci` statt `npm install`**, solange du keine Dependencies änderst — `npm install`
+  formatiert das Lockfile je nach npm-Version um und erzeugt themenfremdes Diff-Rauschen
+  im PR. Lockfile-Änderungen gehören nur in PRs, die bewusst Dependencies ändern.
 - Kleine, fokussierte PRs. Richtwert ≤ 200 geänderte Zeilen (generierte Dateien wie
   Lockfiles/Snapshots zählen nicht). **Das ist eine Planungs-Grenze, keine Qualitäts-Grenze:**
   - Absehbar deutlich drüber? → Erst prüfen, ob sich das Issue in kleinere Slices teilen
