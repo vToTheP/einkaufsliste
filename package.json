@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "gen:icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@vitejs/plugin-react": "^4.3.4",
