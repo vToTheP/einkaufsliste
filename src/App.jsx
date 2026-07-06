@@ -37,7 +37,8 @@ export default function App() {
     const id =
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
-        : String(Date.now()) + Math.random().toString(16).slice(2)
+        : // eslint-disable-next-line sonarjs/pseudo-random -- reine Fallback-ID (kein Sicherheitskontext), nur wenn crypto.randomUUID fehlt
+          String(Date.now()) + Math.random().toString(16).slice(2)
     setItems((prev) => [...prev, { id, name, done: false }])
     setDraft('')
   }
