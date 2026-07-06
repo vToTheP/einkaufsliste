@@ -103,4 +103,70 @@ describe('App', () => {
 
     expect(screen.getByRole('checkbox', { name: 'Käse' })).toBeChecked()
   })
+
+  it('entfernt ein Item dauerhaft', () => {
+    render(<App />)
+
+    addItem('Milch')
+    fireEvent.click(screen.getByRole('button', { name: 'Milch löschen' }))
+
+    expect(screen.queryByText('Milch')).not.toBeInTheDocument()
+    expect(screen.getByText('Deine Liste ist leer.')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toHaveLength(0)
+  })
+
+  it('bearbeitet den Namen eines Items', () => {
+    render(<App />)
+
+    addItem('Milch')
+    fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
+    fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
+      target: { value: 'Hafermilch' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(screen.getByText('Hafermilch')).toBeInTheDocument()
+    expect(screen.queryByText('Milch')).not.toBeInTheDocument()
+  })
+
+  it('persistiert den bearbeiteten Namen nach einem Reload', () => {
+    render(<App />)
+
+    addItem('Milch')
+    fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
+    fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
+      target: { value: 'Hafermilch' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(stored[0]).toMatchObject({ name: 'Hafermilch' })
+  })
+
+  it('behält den erledigt-Zustand beim Umbenennen', () => {
+    render(<App />)
+
+    addItem('Milch')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Milch' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
+    fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
+      target: { value: 'Hafermilch' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(screen.getByRole('checkbox', { name: 'Hafermilch' })).toBeChecked()
+  })
+
+  it('ignoriert eine leere Umbenennung', () => {
+    render(<App />)
+
+    addItem('Milch')
+    fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
+    fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
+      target: { value: '   ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(screen.getByText('Milch')).toBeInTheDocument()
+  })
 })
