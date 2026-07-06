@@ -17,6 +17,13 @@ Diese Datei wird bei jeder lokalen **und** Cloud-Session geladen und ist bindend
 - **Bei Mehrdeutigkeit / Sackgasse:** nicht raten. Kurz nachfragen bzw. die offene Frage im
   PR/Issue festhalten, statt eine Richtung zu erfinden.
 
+## Issue-Auswahl & Labels
+
+- `status:ready` = bereit zur AFK-Umsetzung · `status:blocked` = wartet (siehe „Blocked by #N" im Body)
+- Priorität: `prio:1` > `prio:2` > `prio:3`. Agenten wählen Issues nur über den Command
+  `/implement-next` (`.claude/commands/implement-next.md`) — nie eigenmächtig.
+- KI-erstellte Issues bekommen immer ein Triage-Label und nie automatisch `status:ready`.
+
 ## Vertikale Slices
 
 Jedes Issue liefert eine dünne End-to-End-Fähigkeit (Eingabe → State → Persistenz → Anzeige),
