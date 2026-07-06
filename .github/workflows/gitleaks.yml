@@ -1,0 +1,23 @@
+name: Gitleaks
+
+# Secret-Scanning bei jedem PR gegen main (und Pushes auf main).
+# Für öffentliche Repos ohne Organisations-Lizenz kostenlos.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Vollständige History, damit auch ältere Commits im PR gescannt werden.
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # npm-Abhängigkeiten wöchentlich prüfen.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  # GitHub-Actions wöchentlich prüfen — bumpt nebenbei veraltete Action-Versionen
+  # (behebt die Node-20-Deprecation-Warnungen).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
