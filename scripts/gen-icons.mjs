@@ -1,5 +1,6 @@
-// Erzeugt einfache PWA-Icons (einfarbige Quadrate in Akzentfarbe) ohne externe
-// Abhängigkeiten. Platzhalter fürs Fundament — später durch echte Icons ersetzbar.
+// Erzeugt einfache PWA-Icons ohne externe Abhängigkeiten: ein weißes Häkchen
+// (Symbol für die abhakbare Liste) auf der Akzentfarbe. Reicht als App-Icon
+// fürs Home-Bildschirm; kann später durch echtes Brand-Artwork ersetzt werden.
 // Aufruf: npm run gen:icons
 import zlib from 'node:zlib'
 import { writeFileSync, mkdirSync } from 'node:fs'
@@ -35,18 +36,51 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crc])
 }
 
-function solidPng(size, [r, g, b]) {
+// Abstand eines Punktes (px,py) zur Strecke a→b — für gleichmäßig dicke Linien.
+function distToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax
+  const dy = by - ay
+  const len2 = dx * dx + dy * dy
+  let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0
+  t = Math.max(0, Math.min(1, t))
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+}
+
+// RGBA-Pixel: Hintergrund in Akzentfarbe, darauf ein Häkchen in fg.
+function checkIconPixels(size, bg, fg) {
+  const px = Buffer.alloc(size * size * 4)
+  // Häkchen aus zwei Strecken (normalisiert, innerhalb der maskable-Safe-Zone).
+  const pts = [
+    [0.26, 0.53],
+    [0.44, 0.71],
+    [0.74, 0.32],
+  ].map(([x, y]) => [x * size, y * size])
+  const half = size * 0.055 // halbe Strichbreite
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const cx = x + 0.5
+      const cy = y + 0.5
+      const d = Math.min(
+        distToSegment(cx, cy, pts[0][0], pts[0][1], pts[1][0], pts[1][1]),
+        distToSegment(cx, cy, pts[1][0], pts[1][1], pts[2][0], pts[2][1]),
+      )
+      const [r, g, b] = d <= half ? fg : bg
+      const o = (y * size + x) * 4
+      px[o] = r
+      px[o + 1] = g
+      px[o + 2] = b
+      px[o + 3] = 255
+    }
+  }
+  return px
+}
+
+function pngFromPixels(size, px) {
   const rowLen = size * 4 + 1
   const raw = Buffer.alloc(rowLen * size)
   for (let y = 0; y < size; y++) {
     raw[y * rowLen] = 0 // Filter: None
-    for (let x = 0; x < size; x++) {
-      const o = y * rowLen + 1 + x * 4
-      raw[o] = r
-      raw[o + 1] = g
-      raw[o + 2] = b
-      raw[o + 3] = 255
-    }
+    px.copy(raw, y * rowLen + 1, y * size * 4, (y + 1) * size * 4)
   }
   const idat = zlib.deflateSync(raw, { level: 9 })
   const ihdr = Buffer.alloc(13)
@@ -64,6 +98,7 @@ function solidPng(size, [r, g, b]) {
 }
 
 const accent = [22, 163, 74]
+const white = [255, 255, 255]
 const icons = [
   ['pwa-192x192.png', 192],
   ['pwa-512x512.png', 512],
@@ -71,6 +106,7 @@ const icons = [
 ]
 
 for (const [name, size] of icons) {
-  writeFileSync(join(outDir, name), solidPng(size, accent))
+  const png = pngFromPixels(size, checkIconPixels(size, accent, white))
+  writeFileSync(join(outDir, name), png)
   console.log('geschrieben:', name, `(${size}x${size})`)
 }
