@@ -5,6 +5,23 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # Karenzzeit gegen Supply-Chain-Angriffe: kompromittierte Releases werden
+    # meist innerhalb von 24-72h entdeckt und zurückgezogen. Wir warten bewusst,
+    # statt im Angriffsfenster zu mergen. Majors länger (mehr Reifezeit für
+    # Ecosystem-Plugins), Security-Fixes umgeht der Cooldown automatisch nicht —
+    # dafür erstellt Dependabot weiterhin sofortige Security-PRs.
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 5
+      semver-patch-days: 3
+    # Lärm reduzieren: Minor+Patch gebündelt in einem Sammel-PR pro Woche.
+    # Majors bleiben einzeln (je eigenes Review, echte Migrationsarbeit).
+    groups:
+      minor-und-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
 
   # GitHub-Actions wöchentlich prüfen — bumpt nebenbei veraltete Action-Versionen
   # (behebt die Node-20-Deprecation-Warnungen).
@@ -12,3 +29,12 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
+    # Actions-Bumps sind risikoarm (GitHub-eigene Actions dominieren) → alle
+    # in einem Sammel-PR.
+    groups:
+      actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
