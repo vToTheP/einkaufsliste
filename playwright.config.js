@@ -12,6 +12,14 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // Referenz-Screenshots werden im offiziellen Playwright-Container erzeugt
+  // (siehe .github/workflows/ci.yml), damit das Font-Rendering deterministisch
+  // ist. Die kleine Toleranz fängt nur unvermeidbares Anti-Aliasing-Rauschen ab
+  // — eine bewusste UI-Änderung (z.B. andere Akzentfarbe) betrifft weit mehr
+  // Pixel und macht die CI trotzdem rot.
+  expect: {
+    toHaveScreenshot: { maxDiffPixelRatio: 0.01 },
+  },
   use: {
     baseURL,
     trace: 'on-first-retry',
