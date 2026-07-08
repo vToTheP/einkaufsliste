@@ -22,7 +22,12 @@ Diese Datei wird bei jeder lokalen **und** Cloud-Session geladen und ist bindend
 - `status:ready` = bereit zur AFK-Umsetzung · `status:blocked` = wartet (siehe „Blocked by #N" im Body)
 - Priorität: `prio:1` > `prio:2` > `prio:3`. Agenten wählen Issues nur über den Command
   `/implement-next` (`.claude/commands/implement-next.md`) — nie eigenmächtig.
-- KI-erstellte Issues bekommen immer ein Triage-Label und nie automatisch `status:ready`.
+- **Autonom** vom Cloud-Agent (ohne menschliches Beisein) erstellte Issues bekommen immer
+  ein `triage`-Label und nie automatisch `status:ready`. Bekannte Fälle: Bug-Issues aus
+  Webhook/Error-Reporting, Auto-Eval aus User-Feedback, PR-Kommentar-Sammelissues (ab der
+  2. Review-Iteration). **Interaktiv gemeinsam mit Vincent** erstellte Issues (z.B. via
+  `/to-issues`) werden dagegen direkt korrekt gelabelt: unblockt → `status:ready`,
+  blockiert → `status:blocked`.
 
 ## Vertikale Slices
 
