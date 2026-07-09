@@ -1,10 +1,10 @@
 name: Gitleaks
 
-# Secret-Scanning bei jedem PR gegen main (und Pushes auf main).
+# Secret-Scanning bei jedem PR gegen main.
 # Für öffentliche Repos ohne Organisations-Lizenz kostenlos.
+# Kein push-auf-main-Trigger: Der Commit wurde im PR bereits gescannt; ein
+# erneuter Lauf beim Merge wäre redundant.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 

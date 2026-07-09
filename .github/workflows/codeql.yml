@@ -2,9 +2,9 @@ name: CodeQL
 
 # Statische Code-Analyse (GitHub-Standard). Public Repo = kostenlos.
 # Läuft bei jedem PR gegen main sowie wöchentlich als Baseline-Scan.
+# Kein push-auf-main-Trigger: Der Commit wurde im PR bereits analysiert; der
+# schedule-Lauf hält zusätzlich die Baseline aktuell.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   schedule:
