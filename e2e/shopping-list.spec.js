@@ -9,6 +9,36 @@ const addItem = async (page, name) => {
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
 }
 
+// Läuft im Browser-Kontext: liest alle Items direkt aus IndexedDB.
+const readItemsInBrowser = () =>
+  new Promise((resolve) => {
+    const req = indexedDB.open('einkaufsliste')
+    req.onerror = () => resolve([])
+    req.onsuccess = () => {
+      const getAll = req.result
+        .transaction('items', 'readonly')
+        .objectStore('items')
+        .getAll()
+      getAll.onsuccess = () => {
+        req.result.close()
+        resolve(getAll.result)
+      }
+    }
+  })
+
+// Persistenz läuft asynchron nach IndexedDB. Die UI aktualisiert sofort
+// (optimistisch), der Schreibvorgang committet Millisekunden später. Vor einem
+// programmatischen Reload — schneller als jede menschliche Interaktion — warten
+// wir daher, bis der erwartete Zustand tatsächlich im Store liegt.
+const waitForPersisted = async (page, name, done) => {
+  await expect
+    .poll(async () => {
+      const items = await page.evaluate(readItemsInBrowser)
+      return items.some((item) => item.name === name && item.done === done)
+    })
+    .toBe(true)
+}
+
 test.beforeEach(async ({ page }) => {
   // Relativ zur baseURL (inkl. /einkaufsliste/-Basispfad).
   await page.goto('./')
@@ -66,6 +96,8 @@ test('behält Items und erledigt-Zustand nach einem Reload', async ({ page }) =>
   await addItem(page, 'Brot')
   await page.getByRole('checkbox', { name: 'Brot' }).check()
 
+  // Warten, bis der optimistische Toggle durablen IndexedDB-State erreicht hat.
+  await waitForPersisted(page, 'Brot', true)
   await page.reload()
 
   await expect(page.getByText('Milch')).toBeVisible()

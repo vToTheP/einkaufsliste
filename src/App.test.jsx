@@ -1,172 +1,184 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import App from './App.jsx'
+import { createDb } from './db/database.js'
+import { createRepository } from './db/repository.js'
 
-const STORAGE_KEY = 'einkaufsliste:items'
+// Jeder Test bekommt eine frisch benannte DB + eigenes Repository → Isolation.
+// Persistenz wird über Unmount→Remount geprüft, nicht durch Peeken auf Storage-Keys.
+let counter = 0
+let db
+let repo
 
-function addItem(name) {
+beforeEach(() => {
+  counter += 1
+  db = createDb(`einkaufsliste-app-test-${counter}`)
+  repo = createRepository(db)
+})
+
+afterEach(async () => {
+  await db.delete()
+})
+
+function renderApp() {
+  return render(<App repository={repo} />)
+}
+
+async function addItem(name) {
   fireEvent.change(screen.getByLabelText('Neues Item'), {
     target: { value: name },
   })
   fireEvent.click(screen.getByRole('button', { name: 'Hinzufügen' }))
+  if (name.trim()) {
+    await screen.findByText(name)
+  }
 }
 
 describe('App', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('zeigt den Titel', () => {
-    render(<App />)
+  it('zeigt den Titel', async () => {
+    renderApp()
     expect(
-      screen.getByRole('heading', { name: 'Einkaufsliste' }),
+      await screen.findByRole('heading', { name: 'Einkaufsliste' }),
     ).toBeInTheDocument()
   })
 
-  it('zeigt einen Hinweis, wenn die Liste leer ist', () => {
-    render(<App />)
-    expect(screen.getByText('Deine Liste ist leer.')).toBeInTheDocument()
+  it('zeigt einen Hinweis, wenn die Liste leer ist', async () => {
+    renderApp()
+    expect(
+      await screen.findByText('Deine Liste ist leer.'),
+    ).toBeInTheDocument()
   })
 
-  it('fügt ein Item hinzu und zeigt es sofort an', () => {
-    render(<App />)
+  it('fügt ein Item hinzu und zeigt es sofort an', async () => {
+    renderApp()
 
-    addItem('Milch')
+    await addItem('Milch')
 
     expect(screen.getByText('Milch')).toBeInTheDocument()
     expect(screen.queryByText('Deine Liste ist leer.')).not.toBeInTheDocument()
   })
 
-  it('ignoriert leere Eingaben', () => {
-    render(<App />)
+  it('ignoriert leere Eingaben', async () => {
+    renderApp()
+    await screen.findByText('Deine Liste ist leer.')
 
-    addItem('')
-    addItem('   ')
+    await addItem('')
+    await addItem('   ')
 
     expect(screen.getByText('Deine Liste ist leer.')).toBeInTheDocument()
   })
 
-  it('speichert Items in localStorage', () => {
-    render(<App />)
+  it('behält hinzugefügte Items nach einem Reload (Unmount→Remount)', async () => {
+    const { unmount } = renderApp()
 
-    addItem('Brot')
+    await addItem('Brot')
+    unmount()
 
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored).toHaveLength(1)
-    expect(stored[0]).toMatchObject({ name: 'Brot' })
-    expect(typeof stored[0].id).toBe('string')
+    renderApp()
+    expect(await screen.findByText('Brot')).toBeInTheDocument()
   })
 
-  it('lädt gespeicherte Items nach einem Reload', () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify([{ id: '1', name: 'Butter' }]),
-    )
+  it('markiert ein Item beim Tap als erledigt und wieder zurück', async () => {
+    renderApp()
 
-    render(<App />)
-
-    expect(screen.getByText('Butter')).toBeInTheDocument()
-  })
-
-  it('markiert ein Item beim Tap als erledigt und wieder zurück', () => {
-    render(<App />)
-
-    addItem('Milch')
+    await addItem('Milch')
 
     const checkbox = screen.getByRole('checkbox', { name: 'Milch' })
     expect(checkbox).not.toBeChecked()
 
     fireEvent.click(checkbox)
-    expect(checkbox).toBeChecked()
+    await screen.findByRole('checkbox', { name: 'Milch', checked: true })
 
     fireEvent.click(checkbox)
-    expect(checkbox).not.toBeChecked()
+    await screen.findByRole('checkbox', { name: 'Milch', checked: false })
   })
 
-  it('persistiert den erledigt-Zustand in localStorage', () => {
-    render(<App />)
+  it('stellt den erledigt-Zustand nach einem Reload wieder her', async () => {
+    const { unmount } = renderApp()
 
-    addItem('Brot')
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Brot' }))
+    await addItem('Käse')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Käse' }))
+    await screen.findByRole('checkbox', { name: 'Käse', checked: true })
+    unmount()
 
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored[0]).toMatchObject({ name: 'Brot', done: true })
+    renderApp()
+    expect(
+      await screen.findByRole('checkbox', { name: 'Käse' }),
+    ).toBeChecked()
   })
 
-  it('stellt den erledigt-Zustand nach einem Reload wieder her', () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify([{ id: '1', name: 'Käse', done: true }]),
-    )
+  it('entfernt ein Item dauerhaft', async () => {
+    const { unmount } = renderApp()
 
-    render(<App />)
-
-    expect(screen.getByRole('checkbox', { name: 'Käse' })).toBeChecked()
-  })
-
-  it('entfernt ein Item dauerhaft', () => {
-    render(<App />)
-
-    addItem('Milch')
+    await addItem('Milch')
     fireEvent.click(screen.getByRole('button', { name: 'Milch löschen' }))
 
+    expect(await screen.findByText('Deine Liste ist leer.')).toBeInTheDocument()
     expect(screen.queryByText('Milch')).not.toBeInTheDocument()
-    expect(screen.getByText('Deine Liste ist leer.')).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toHaveLength(0)
+
+    // Bleibt auch nach Reload entfernt.
+    unmount()
+    renderApp()
+    expect(await screen.findByText('Deine Liste ist leer.')).toBeInTheDocument()
   })
 
-  it('bearbeitet den Namen eines Items', () => {
-    render(<App />)
+  it('bearbeitet den Namen eines Items', async () => {
+    renderApp()
 
-    addItem('Milch')
+    await addItem('Milch')
     fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
     fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
       target: { value: 'Hafermilch' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-    expect(screen.getByText('Hafermilch')).toBeInTheDocument()
+    expect(await screen.findByText('Hafermilch')).toBeInTheDocument()
     expect(screen.queryByText('Milch')).not.toBeInTheDocument()
   })
 
-  it('persistiert den bearbeiteten Namen nach einem Reload', () => {
-    render(<App />)
+  it('persistiert den bearbeiteten Namen nach einem Reload', async () => {
+    const { unmount } = renderApp()
 
-    addItem('Milch')
+    await addItem('Milch')
     fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
     fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
       target: { value: 'Hafermilch' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    await screen.findByText('Hafermilch')
+    unmount()
 
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored[0]).toMatchObject({ name: 'Hafermilch' })
+    renderApp()
+    expect(await screen.findByText('Hafermilch')).toBeInTheDocument()
   })
 
-  it('behält den erledigt-Zustand beim Umbenennen', () => {
-    render(<App />)
+  it('behält den erledigt-Zustand beim Umbenennen', async () => {
+    renderApp()
 
-    addItem('Milch')
+    await addItem('Milch')
     fireEvent.click(screen.getByRole('checkbox', { name: 'Milch' }))
+    await screen.findByRole('checkbox', { name: 'Milch', checked: true })
     fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
     fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
       target: { value: 'Hafermilch' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-    expect(screen.getByRole('checkbox', { name: 'Hafermilch' })).toBeChecked()
+    expect(
+      await screen.findByRole('checkbox', { name: 'Hafermilch' }),
+    ).toBeChecked()
   })
 
-  it('ignoriert eine leere Umbenennung', () => {
-    render(<App />)
+  it('ignoriert eine leere Umbenennung', async () => {
+    renderApp()
 
-    addItem('Milch')
+    await addItem('Milch')
     fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
     fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
       target: { value: '   ' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-    expect(screen.getByText('Milch')).toBeInTheDocument()
+    expect(await screen.findByText('Milch')).toBeInTheDocument()
   })
 })
