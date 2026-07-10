@@ -1,57 +1,58 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { repository as defaultRepository } from './db/repository.js'
 
-// Häppchen 2: Items hinzufügen + anzeigen, Persistenz via localStorage.
-const STORAGE_KEY = 'einkaufsliste:items'
-
-function loadItems() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter(
-        (item) => item && typeof item.id === 'string' && typeof item.name === 'string',
-      )
-      .map((item) => ({ ...item, done: item.done === true }))
-  } catch {
-    return []
-  }
-}
-
-export default function App() {
-  const [items, setItems] = useState(loadItems)
+// Persistenz läuft ausschließlich über das Repository (IndexedDB via Dexie).
+// Die Komponente kennt weder Dexie noch IndexedDB direkt.
+export default function App({ repository = defaultRepository }) {
+  const [items, setItems] = useState([])
+  const [ready, setReady] = useState(false)
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState('')
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-  }, [items])
+    let active = true
+    ;(async () => {
+      try {
+        await repository.init()
+        const loaded = await repository.loadItems()
+        if (active) setItems(loaded)
+      } catch {
+        // Store nicht lesbar → robust mit leerer Liste weitermachen (kein Crash).
+        if (active) setItems([])
+      } finally {
+        if (active) setReady(true)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [repository])
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const name = draft.trim()
     if (!name) return
-    const id =
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : // eslint-disable-next-line sonarjs/pseudo-random -- reine Fallback-ID (kein Sicherheitskontext), nur wenn crypto.randomUUID fehlt
-          String(Date.now()) + Math.random().toString(16).slice(2)
-    setItems((prev) => [...prev, { id, name, done: false }])
+    const item = await repository.addItem(name)
+    setItems((prev) => [...prev, item])
     setDraft('')
   }
 
-  function toggleDone(id) {
+  async function toggleDone(id) {
+    const current = items.find((item) => item.id === id)
+    if (!current) return
+    const done = !current.done
+    // UI synchron aktualisieren: eine kontrollierte Checkbox, deren onChange den
+    // State erst nach einem await ändert, würde von React sofort zurückgesetzt.
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, done: !item.done } : item,
-      ),
+      prev.map((item) => (item.id === id ? { ...item, done } : item)),
     )
+    await repository.setDone(id, done)
   }
 
-  function deleteItem(id) {
+  async function deleteItem(id) {
+    await repository.removeItem(id)
     setItems((prev) => prev.filter((item) => item.id !== id))
     if (editingId === id) setEditingId(null)
   }
@@ -66,13 +67,14 @@ export default function App() {
     setEditDraft('')
   }
 
-  function handleRenameSubmit(event) {
+  async function handleRenameSubmit(event) {
     event.preventDefault()
     const name = editDraft.trim()
     if (!name) {
       cancelEdit()
       return
     }
+    await repository.renameItem(editingId, name)
     setItems((prev) =>
       prev.map((item) =>
         item.id === editingId ? { ...item, name } : item,
@@ -102,7 +104,7 @@ export default function App() {
         </button>
       </form>
 
-      {items.length === 0 ? (
+      {ready && items.length === 0 ? (
         <p className="app__empty">Deine Liste ist leer.</p>
       ) : (
         <ul className="app__list">
