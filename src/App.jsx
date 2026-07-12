@@ -2,6 +2,20 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { repository as defaultRepository } from './db/repository.js'
 
+// Führt den initialen Persistenz-Load mit dem aktuellen UI-State zusammen, ohne
+// bereits getätigte User-Aktionen zu überschreiben: Löst der Load (z.B. auf
+// langsamen Geräten oder unter Last) erst auf, nachdem der Nutzer schon Items
+// angelegt/getoggelt hat, würde ein direktes Ersetzen diesen optimistischen
+// State verwerfen. Deshalb: vorhandenen State behalten, nur noch nicht gezeigte
+// persistierte Items ergänzen. Als reine Funktion ausgelagert (testbar + hält
+// den Effect flach).
+function mergeLoadedItems(prev, loaded) {
+  if (prev.length === 0) return loaded
+  const prevIds = new Set(prev.map((item) => item.id))
+  const extra = loaded.filter((item) => !prevIds.has(item.id))
+  return [...extra, ...prev]
+}
+
 // Persistenz läuft ausschließlich über das Repository (IndexedDB via Dexie).
 // Die Komponente kennt weder Dexie noch IndexedDB direkt.
 export default function App({ repository = defaultRepository }) {
@@ -17,19 +31,7 @@ export default function App({ repository = defaultRepository }) {
       try {
         await repository.init()
         const loaded = await repository.loadItems()
-        // Der initiale Load darf bereits getätigte User-Aktionen nicht
-        // überschreiben: Löst er (z.B. auf langsamen Geräten oder unter Last)
-        // erst auf, nachdem der Nutzer schon Items angelegt/getoggelt hat, würde
-        // ein direktes setItems(loaded) diesen optimistischen State verwerfen.
-        // Deshalb: vorhandenen State behalten, nur noch nicht gezeigte
-        // persistierte Items ergänzen.
-        if (active)
-          setItems((prev) => {
-            if (prev.length === 0) return loaded
-            const prevIds = new Set(prev.map((item) => item.id))
-            const extra = loaded.filter((item) => !prevIds.has(item.id))
-            return [...extra, ...prev]
-          })
+        if (active) setItems((prev) => mergeLoadedItems(prev, loaded))
       } catch {
         // Store nicht lesbar → robust mit leerer Liste weitermachen (kein Crash).
         if (active) setItems([])
