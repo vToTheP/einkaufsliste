@@ -1,0 +1,70 @@
+name: Unblock ready issues
+
+# Wenn ein Issue geschlossen wird (u.a. durch einen gemergten PR mit "Closes #N"),
+# alle davon abhängigen Issues von status:blocked auf status:ready heben — aber nur,
+# sobald ALLE ihre Blocker geschlossen sind. So verhungert die Nacht-Fabrik nicht
+# nach einer einzigen Slice (Baustein 3 aus #53: Nachschub-Automatik).
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  unblock:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Abhängige Issues freischalten
+        run: |
+          set -euo pipefail
+
+          # Alle offenen, blockierten Issues holen.
+          blocked=$(gh issue list --repo "$REPO" --state open \
+            --label status:blocked --json number,body,labels --limit 200)
+
+          echo "$blocked" | jq -c '.[]' | while read -r issue; do
+            num=$(echo "$issue" | jq -r '.number')
+
+            # triage-Guard: KI-erstellte Issues nie automatisch auf ready heben
+            # (CLAUDE.md — Issue-Auswahl & Labels).
+            if echo "$issue" | jq -e '.labels[] | select(.name == "triage")' >/dev/null; then
+              echo "#$num: triage-Label → übersprungen."
+              continue
+            fi
+
+            # Blocker-Nummern aus dem "## Blocked by"-Abschnitt lesen: alle "#<zahl>"-
+            # Referenzen zwischen der Überschrift und der nächsten "##"-Überschrift.
+            body=$(echo "$issue" | jq -r '.body // ""')
+            blockers=$(printf '%s\n' "$body" \
+              | awk 'tolower($0) ~ /^##+[[:space:]]*blocked by/ {f=1; next} /^##/ {f=0} f' \
+              | grep -oE '#[0-9]+' | tr -d '#' | sort -u || true)
+
+            if [ -z "$blockers" ]; then
+              echo "#$num: kein '## Blocked by'-Abschnitt mit Referenzen → übersprungen."
+              continue
+            fi
+
+            # Sind alle Blocker geschlossen? Unbekannter/fehlender Status zählt als offen
+            # (sicherer Default: im Zweifel blockiert lassen).
+            all_closed=true
+            for b in $blockers; do
+              state=$(gh issue view "$b" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
+              echo "#$num blocked by #$b → $state"
+              if [ "$state" != "CLOSED" ]; then
+                all_closed=false
+              fi
+            done
+
+            if [ "$all_closed" = true ]; then
+              echo "#$num: alle Blocker geschlossen → status:ready."
+              gh issue edit "$num" --repo "$REPO" \
+                --remove-label status:blocked --add-label status:ready
+            else
+              echo "#$num: noch offene Blocker → bleibt status:blocked."
+            fi
+          done
