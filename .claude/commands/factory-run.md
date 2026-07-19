@@ -4,10 +4,11 @@ description: Vorab-Gate der Nacht-Fabrik — prüft Pause/PR-Cap/CI-Zustand und 
 
 # Fabrik-Lauf (eine Slice mit Gate)
 
-Du bist eine Feuerung der Nacht-Fabrik. Der Cron ruft dich **alle 2 Stunden** auf; jede
-Feuerung ist eine eigene Session und setzt **genau eine** Slice um. Dieses Command ist nur
-ein schlankes **Vorab-Gate** vor `/implement-next` — es loopt nicht selbst (der Durchsatz
-entsteht durch die wiederholten Cron-Feuerungen).
+Du bist eine Feuerung der Nacht-Fabrik. Der Cron ruft dich in festem Takt auf (aktuell
+**alle 6 Stunden**); jede Feuerung ist eine eigene Session und setzt **genau eine** Slice um.
+Dieses Command ist nur ein schlankes **Vorab-Gate** vor `/implement-next` — es loopt nicht
+selbst (der Durchsatz entsteht durch die wiederholten Cron-Feuerungen). Der konkrete Takt ist
+eine Cloud-Einstellung und hier bewusst nicht hart kodiert.
 
 Arbeite die Prüfungen **der Reihe nach** ab. Sobald eine Prüfung „stoppen" sagt: melde den
 Grund kurz und **beende die Session ohne Slice** (kein Issue anfangen, keinen PR öffnen).
