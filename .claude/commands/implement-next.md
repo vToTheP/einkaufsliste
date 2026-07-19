@@ -30,6 +30,30 @@ Du setzt genau EIN Issue dieses Repos um. Wähle es selbstständig nach diesen R
   Seams sind durch die **Akzeptanzkriterien des Issues** vorgegeben. Bestehende Tests
   bleiben grün.
 - Qualitäts-Gates vor dem Push: `npm run lint`, `npm test`, `npm run build` müssen grün sein.
+
+## Cleanup-Pass (nach Grün, vor dem PR)
+
+Hat der Slice Commits erzeugt, räume den eigenen Diff auf, **bevor** der PR aufgeht — ein
+frischer Blick auf den fertigen Code findet, was während des TDD-Zyklus unsauber blieb.
+
+- **Delegiere das an einen Subagenten mit Sonnet** (nicht am Hauptmodell hängen lassen):
+  Auch wenn die Slice selbst auf Opus lief, ist Aufräumen Sonnet-Arbeit — sonst kostet der
+  Pass ein Vielfaches (Kernprinzip 8).
+- Nutze `/simplify` bzw. dessen Kriterien: Wiederverwendung, Vereinfachung, Redundanz,
+  Verschachtelung, Benennung, zusammengehörige Logik bündeln.
+- **Verhalten-neutral — die härteste Regel dieses Schritts:** Nur *wie* der Code etwas tut,
+  nie *was* er tut. Keine Feature-, Output- oder Verhaltensänderung. Keine neuen
+  Abhängigkeiten. Tests werden **nicht** angepasst, damit ein Refactor „passt" — ändert der
+  Cleanup ein Testergebnis, ist der Cleanup falsch, nicht der Test.
+- Danach die Qualitäts-Gates **erneut** fahren (`lint`, `test`, `build`). Rot → Cleanup
+  verwerfen (`git revert`/zurücknehmen) und ohne ihn weitermachen. Der Slice ist wichtiger
+  als die Politur.
+- **Ist der Code bereits sauber, tu nichts.** Kein Leer-Commit, keine Kosmetik um der
+  Kosmetik willen.
+- Der Cleanup zählt **nicht** gegen den 200-Zeilen-Richtwert.
+
+## PR
+
 - Öffne einen **kleinen, fokussierten PR** gegen `main` (Richtwert ≤ 200 Zeilen) mit
   `Closes #<Nr>` im Body. Übernimm den Abschnitt „Nicht Teil dieser Slice" in die
   PR-Beschreibung.
@@ -46,3 +70,6 @@ Du setzt genau EIN Issue dieses Repos um. Wähle es selbstständig nach diesen R
 - Fasse kurz zusammen: gewähltes Issue, was umgesetzt wurde, Testabdeckung, was bewusst
   NICHT gemacht wurde. Markiere offene Fragen deutlich, statt sie stillschweigend zu
   entscheiden.
+- Nenne dabei **ausdrücklich das Ergebnis des Cleanup-Passes**: aufgeräumt (was?), nichts
+  zu tun, oder verworfen (warum?). Solange der Pass neu ist, ist das der einzige Weg zu
+  sehen, ob er Nutzen bringt oder nur Quota kostet.
