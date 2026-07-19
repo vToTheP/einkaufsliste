@@ -24,14 +24,23 @@ function renderApp() {
   return render(<App repository={repo} />)
 }
 
-async function addItem(name) {
-  fireEvent.change(screen.getByLabelText('Neues Item'), {
-    target: { value: name },
+// Gemeinsames Muster für "Draft-Feld befüllen + Formular absenden" hinter
+// addItem/createList: unterscheiden sich nur in Label, Button-Text und der
+// Wartebedingung fürs Ergebnis.
+async function submitDraft(labelText, buttonText, value, waitForResult) {
+  fireEvent.change(screen.getByLabelText(labelText), {
+    target: { value },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Hinzufügen' }))
-  if (name.trim()) {
-    await screen.findByText(name)
+  fireEvent.click(screen.getByRole('button', { name: buttonText }))
+  if (value.trim()) {
+    await waitForResult()
   }
+}
+
+async function addItem(name) {
+  await submitDraft('Neues Item', 'Hinzufügen', name, () =>
+    screen.findByText(name),
+  )
 }
 
 describe('App', () => {
@@ -194,13 +203,9 @@ describe('App – mehrere Listen', () => {
   })
 
   async function createList(name) {
-    fireEvent.change(screen.getByLabelText('Neue Liste'), {
-      target: { value: name },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Liste anlegen' }))
-    if (name.trim()) {
-      await screen.findByRole('option', { name: name.trim() })
-    }
+    await submitDraft('Neue Liste', 'Liste anlegen', name, () =>
+      screen.findByRole('option', { name: name.trim() }),
+    )
   }
 
   it('legt eine neue Liste an, macht sie aktiv und zeigt sie leer', async () => {

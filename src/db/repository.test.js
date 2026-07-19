@@ -22,6 +22,12 @@ afterEach(async () => {
   await db.delete()
 })
 
+// Für Tests, die (anders als `db`/`repo` oben) eine zweite, unabhängige DB
+// brauchen, z.B. um zwei nebenläufige Repository-Instanzen zu simulieren.
+function freshRepo(suffix) {
+  return createRepository(createDb(`einkaufsliste-${suffix}-${counter}`))
+}
+
 describe('repository – Bootstrap', () => {
   it('legt auf leerem Store eine leere Standardliste an', async () => {
     await repo.init()
@@ -156,7 +162,7 @@ describe('repository – mehrere Listen', () => {
     // Simuliert: init() (App-Mount) läuft noch, während der Nutzer bereits eine
     // neue Liste anlegt und aktiviert — die spätere Bootstrap-Antwort darf den
     // Nutzer-State nicht zurück auf die Standardliste kippen.
-    const fresh = createRepository(createDb(`einkaufsliste-race-${counter}`))
+    const fresh = freshRepo('race')
     const [, created] = await Promise.all([
       fresh.init(),
       (async () => {
@@ -174,7 +180,7 @@ describe('repository – mehrere Listen', () => {
     // eine Liste angelegt (db.lists nicht mehr leer), aber `setActiveListId`
     // ist noch nicht gelaufen. Der Bootstrap darf dann nicht eine `default`-ID
     // aktivieren, die es in `lists` gar nicht gibt.
-    const fresh = createRepository(createDb(`einkaufsliste-race2-${counter}`))
+    const fresh = freshRepo('race2')
     const created = await fresh.createList('Wocheneinkauf')
 
     const activeId = await fresh.init()

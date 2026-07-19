@@ -67,12 +67,20 @@ export default function App({ repository = defaultRepository }) {
     }
   }, [repository])
 
+  // Übernimmt eine (bereits persistierte) aktive Liste + ihre Items in den
+  // State. Rein synchron, damit sie sich in switchList/handleCreateList an
+  // exakt der Stelle einfügen lässt, an der bisher die beiden setState-Aufrufe
+  // standen — ohne einen zusätzlichen await-Tick einzuschieben.
+  function applyActiveList(id, items) {
+    setActiveListId(id)
+    setItems(items)
+  }
+
   async function switchList(id) {
     userSwitchedListRef.current = true
     if (id === activeListId) return
     await repository.setActiveListId(id)
-    setActiveListId(id)
-    setItems(await repository.loadItems(id))
+    applyActiveList(id, await repository.loadItems(id))
   }
 
   async function handleCreateList(event) {
@@ -90,8 +98,7 @@ export default function App({ repository = defaultRepository }) {
     setLists((prev) =>
       prev.some((l) => l.id === list.id) ? prev : [...prev, list],
     )
-    setActiveListId(list.id)
-    setItems([])
+    applyActiveList(list.id, [])
     setListDraft((current) => (current === submitted ? '' : current))
   }
 

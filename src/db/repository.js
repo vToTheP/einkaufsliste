@@ -37,6 +37,10 @@ function hasIdAndName(record) {
   )
 }
 
+function byCreatedAt(a, b) {
+  return a.createdAt - b.createdAt
+}
+
 function toList(record) {
   return {
     id: record.id,
@@ -95,19 +99,15 @@ export function createRepository(db = defaultDb) {
       if (activeId) return activeId
 
       const existingLists = await db.lists.toArray()
-      if (existingLists.length === 0) {
-        await db.lists.add({
-          id: DEFAULT_LIST_ID,
-          name: DEFAULT_LIST_NAME,
-          createdAt: now(),
-        })
-        await setActiveListId(DEFAULT_LIST_ID)
-        return DEFAULT_LIST_ID
+      const [oldest] = existingLists.sort(byCreatedAt)
+      const list = oldest ?? {
+        id: DEFAULT_LIST_ID,
+        name: DEFAULT_LIST_NAME,
+        createdAt: now(),
       }
-
-      const fallback = existingLists.sort((a, b) => a.createdAt - b.createdAt)[0]
-      await setActiveListId(fallback.id)
-      return fallback.id
+      if (!oldest) await db.lists.add(list)
+      await setActiveListId(list.id)
+      return list.id
     })
   }
 
@@ -128,7 +128,7 @@ export function createRepository(db = defaultDb) {
     const records = await db.lists.toArray()
     return records
       .filter(hasIdAndName)
-      .sort((a, b) => a.createdAt - b.createdAt)
+      .sort(byCreatedAt)
       .map(toList)
   }
 
