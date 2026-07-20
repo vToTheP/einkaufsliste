@@ -35,7 +35,11 @@ Takt wieder verdichtet werden.
    **Dependabot-/Bot-PRs zählen nie** mit.
 3. **CI-Guardrail** — sind **≥ 3 offene Nicht-Bot-PRs mit fehlgeschlagener CI**, wird
    gestoppt (kein Quota-Verbrennen in kaputtem Zustand). Pending-Checks zählen nicht als rot.
-4. Sonst → `/implement-next` (nächstes `status:ready`-Issue nach Priorität, TDD, kleiner PR,
+4. **Review-Rückstand** — hat ein offener Nicht-Bot-PR unresolved review threads **oder** ist
+   seine neueste Äußerung nicht vom Agenten signiert, wird **dieser PR abgearbeitet statt
+   einer neuen Slice** (niedrigste PR-Nummer zuerst, danach Session-Ende). Die Review-Queue
+   leerziehen hat Vorrang vor neuen PRs.
+5. Sonst → `/implement-next` (nächstes `status:ready`-Issue nach Priorität, TDD, kleiner PR,
    Auto-fix-Monitoring). Kein Ready-Issue → sauberer Stopp.
 
 **Never-auto-merge bleibt:** Die Fabrik öffnet nur PRs und merged nie. Mergen bleibt bei Vincent.
@@ -43,15 +47,31 @@ Takt wieder verdichtet werden.
 ## Review-Zyklus
 
 - **Auto-fix läuft schon** (nativ, aktiviert in `/implement-next`): reagiert auf
-  Review-Kommentare + CI-Failures, pusht Fixes, antwortet, resolved.
+  Review-Kommentare + CI-Failures, pusht Fixes, antwortet, resolved. **Aber nur so lange die
+  Session lebt, die den PR geöffnet hat** — bei 6h-Takt ist die längst beendet, wenn Vincent
+  reviewt. Deshalb holt Gate-Schritt 4 liegengebliebenes Feedback bei einer späteren
+  Feuerung nach (bewusst **kein** zweiter Cron: das würde die Sessions pro Quota-Fenster
+  verdoppeln, und Quota ist der Engpass).
+- **Marker-Konvention `<!-- factory-autofix -->`:** Die Cloud-Session ist als `vToTheP`
+  authentifiziert — **dieselbe Identität wie Vincent**. Reviewer-Feedback und Agenten-Antwort
+  sind am Autor nicht unterscheidbar. Deshalb signiert der Agent jede eigene PR-Äußerung mit
+  diesem Marker; „letztes Wort ohne Marker" = offener Rückstand. Fehlt der Marker, hält die
+  Fabrik ihre eigenen Kommentare für Feedback und dreht sich im Kreis.
 - **Reviewer = Ultrareview, MANUELL durch Vincent beim Merge** (`/code-review ultra <PR>`,
   Pro-Quota-Topf, keine $-API-Kosten). Kein Self-Review.
 - ❌ **Getestet & verworfen (2026-07-20): Cron-getriggerte Ultrareview geht NICHT.** Eine
   Cloud-/Routine-Session kann `/code-review ultra` nicht ausführen — das Command ist dort
   nicht verfügbar und bietet nur einen lokalen Fallback an. Eine dedizierte Review-Routine
-  wurde daher wieder deaktiviert. Automatisierter, unabhängiger Reviewer bleibt offen;
-  Kandidaten: **GitHub Copilot Review** (~$10/mo flat, kein Quota, voll automatisch) oder
-  eine **Claude-Action auf PR-Event** (API-Key → $-Kosten). Bis dahin: manuell beim Merge.
+  wurde daher wieder deaktiviert. Was cron nicht kann, ist konkret **nur** `/code-review ultra`
+  (das abgerechnete Cloud-Produkt) — ein **repo-lokaler Review-Skill** in einer Cron-Session
+  läuft sehr wohl und zieht nur Quota. Das ist der offene Kandidat.
+- **Kostenpflichtige Fremdprodukte sind raus (Entscheidung 2026-07-20):** GitHub Copilot
+  Review und CodeRabbit — keine weiteren $-Abos. (Copilot rechnet inzwischen nutzungsbasiert
+  ab, ein Flat-Tarif für Review existiert nach Vincents Kenntnisstand nicht; die frühere
+  „~$10/mo flat"-Notiz hier war falsch.)
+- **Zur „Unabhängigkeit":** Ein Review-Skill in einer eigenen Session ist praktisch
+  unabhängig — anderer Kontext, kein Bezug zum selbst geschriebenen Code. Das Restrisiko sind
+  **korrelierte blinde Flecken** innerhalb derselben Modellfamilie, nicht fehlende Trennung.
 
 ## Kalibrierung (empirisch nachziehen)
 

@@ -64,6 +64,16 @@ frischer Blick auf den fertigen Code findet, was während des TDD-Zyklus unsaube
   machen.** Reagiere selbstständig auf CI-Failures und Review-Kommentare: Ursache
   analysieren, Fix pushen, im PR kurz erklären. Nur bei Mehrdeutigkeit oder
   architektonischen Fragen nachfragen.
+- **Signiere jede eigene PR-Äußerung** (PR-Body, Kommentare, Thread-Antworten) mit dieser
+  letzten Zeile:
+  ```
+  <!-- factory-autofix -->
+  ```
+  Der Grund: Die Cloud-Session ist als `vToTheP` authentifiziert — dieselbe Identität wie
+  Vincent. Ohne Marker kann eine **spätere** Feuerung nicht unterscheiden, ob das letzte
+  Wort auf einem PR von einem Reviewer oder vom Agenten selbst stammt. Genau darauf stützt
+  sich die Rückstands-Erkennung in `/factory-run` (Gate-Schritt 4). Fehlt der Marker, gilt
+  der eigene Kommentar als offenes Feedback und die Fabrik dreht sich im Kreis.
 - **Warte das CI-Ergebnis ab, bevor du die Session als fertig betrachtest.** Ein PR mit
   roter CI ist nicht „fertig". Denk daran: Die CI-Umgebung ist frisch — lokal vorhandene
   Artefakte (z.B. `dist/`) existieren dort nicht.
