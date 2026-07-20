@@ -30,8 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # Node + npm sind im Image gebündelt; Browser liegen unter
-      # PLAYWRIGHT_BROWSERS_PATH — kein `playwright install` nötig.
+      # PLAYWRIGHT_BROWSERS_PATH. Nach einem Dependabot-Bump von
+      # `@playwright/test` kann die im Image vorinstallierte Browser-Revision
+      # veralten (Image-Tag bleibt bis zum manuellen Review fest) — deshalb
+      # hier explizit die zur installierten Version passende Chromium-Revision
+      # nachziehen (kein `--with-deps`: OS-Pakete sind im Image bereits da).
       - run: npm ci
+      - run: npx playwright install chromium
       - run: npm run build
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v7
