@@ -1,0 +1,64 @@
+name: Update visual snapshots
+
+# Regeneriert die visuellen Playwright-Baselines im GLEICHEN Container wie die
+# e2e-CI und committet sie zurück auf den Ziel-Branch. Nötig, weil intendierte
+# UI-Änderungen die Baselines brechen und diese nur im chromium-linux-Container
+# deterministisch erzeugbar sind (nicht lokal auf Windows / in der Cloud-Session).
+# Manuell auslösen: Actions → "Update visual snapshots" → Branch angeben.
+#
+# WICHTIG: Der Push nutzt das Secret SNAPSHOT_PUSH_TOKEN (Fine-grained PAT,
+# Contents: Read/Write). Ein Push mit dem Standard-GITHUB_TOKEN würde KEINE
+# erneute CI auslösen — dann bliebe der e2e-Check rot/pending. Ohne das Secret
+# committet der Workflow trotzdem, warnt aber, dass die CI manuell neu laufen muss.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch, dessen visuelle Baselines aktualisiert werden sollen"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    # Gleiches Image wie der e2e-Job in ci.yml → Baselines sind deterministisch.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch }}
+          # PAT bevorzugen, damit der spätere Push die CI erneut triggert.
+          # Fällt auf GITHUB_TOKEN zurück, falls das Secret (noch) fehlt.
+          token: ${{ secrets.SNAPSHOT_PUSH_TOKEN || github.token }}
+      - run: npm ci
+      - run: npm run build
+      # --update-snapshots schreibt die neuen Baselines und beendet grün.
+      - run: npm run test:e2e -- --update-snapshots
+      - name: Aktualisierte Baselines committen
+        env:
+          # Nur ein Boolean im Log — der PAT selbst wird nicht in die Shell interpoliert.
+          HAS_PAT: ${{ secrets.SNAPSHOT_PUSH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          # Container läuft als root über gemountetem Workspace → safe.directory nötig.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -z "$(git status --porcelain -- e2e)" ]; then
+            echo "Keine Snapshot-Änderungen — nichts zu committen."
+            exit 0
+          fi
+
+          git add e2e
+          git commit -m "test: visuelle Baselines aktualisiert (workflow_dispatch)"
+          git push origin "HEAD:${{ inputs.branch }}"
+
+          if [ "$HAS_PAT" != "true" ]; then
+            echo "::warning::Ohne SNAPSHOT_PUSH_TOKEN löst der Push keine CI aus — e2e des PR bitte manuell neu starten (Re-run) oder Secret anlegen."
+          fi
