@@ -60,7 +60,7 @@ describe('repository – CRUD', () => {
       name: 'Milch',
       done: false,
       listId: DEFAULT_LIST_ID,
-      category: null,
+      category: 'Milchprodukte & Eier',
     })
     expect(typeof item.id).toBe('string')
     expect(item).not.toHaveProperty('seq')
@@ -68,6 +68,29 @@ describe('repository – CRUD', () => {
     const items = await repo.loadItems()
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({ name: 'Milch', done: false })
+  })
+
+  it('ordnet ein neues Item automatisch einer Kategorie zu', async () => {
+    const item = await repo.addItem('Brot')
+
+    expect(item.category).toBe('Brot & Backwaren')
+  })
+
+  it('ordnet ein Item ohne Treffer der Kategorie Sonstiges zu', async () => {
+    const item = await repo.addItem('Glühbirne')
+
+    expect(item.category).toBe('Sonstiges')
+  })
+
+  it('übersteht die Kategorie einen simulierten Reload (neues Repository, gleiche DB)', async () => {
+    await repo.addItem('Milch')
+
+    const reopened = createRepository(db)
+    await reopened.init()
+
+    expect((await reopened.loadItems())[0]).toMatchObject({
+      category: 'Milchprodukte & Eier',
+    })
   })
 
   it('bewahrt die Einfüge-Reihenfolge', async () => {

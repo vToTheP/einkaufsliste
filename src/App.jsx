@@ -4,6 +4,7 @@ import {
   repository as defaultRepository,
   DEFAULT_LIST_ID,
 } from './db/repository.js'
+import { groupByCategory } from './categories.js'
 
 // Führt den initialen Persistenz-Load mit dem aktuellen UI-State zusammen, ohne
 // bereits getätigte User-Aktionen zu überschreiben: Löst der Load (z.B. auf
@@ -212,65 +213,70 @@ export default function App({ repository = defaultRepository }) {
       {ready && items.length === 0 ? (
         <p className="app__empty">Deine Liste ist leer.</p>
       ) : (
-        <ul className="app__list">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className={`app__item${item.done ? ' app__item--done' : ''}`}
-            >
-              {editingId === item.id ? (
-                <form className="app__edit" onSubmit={handleRenameSubmit}>
-                  <input
-                    className="app__input"
-                    type="text"
-                    value={editDraft}
-                    onChange={(event) => setEditDraft(event.target.value)}
-                    aria-label="Item-Name bearbeiten"
-                    autoFocus
-                  />
-                  <button className="app__save" type="submit">
-                    Speichern
-                  </button>
-                  <button
-                    className="app__cancel"
-                    type="button"
-                    onClick={cancelEdit}
-                  >
-                    Abbrechen
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <label className="app__item-label">
-                    <input
-                      className="app__check"
-                      type="checkbox"
-                      checked={item.done}
-                      onChange={() => toggleDone(item.id)}
-                    />
-                    <span className="app__item-name">{item.name}</span>
-                  </label>
-                  <button
-                    className="app__edit-btn"
-                    type="button"
-                    onClick={() => startEdit(item)}
-                    aria-label={`${item.name} bearbeiten`}
-                  >
-                    Bearbeiten
-                  </button>
-                  <button
-                    className="app__delete"
-                    type="button"
-                    onClick={() => deleteItem(item.id)}
-                    aria-label={`${item.name} löschen`}
-                  >
-                    Löschen
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+        groupByCategory(items).map(([category, groupItems]) => (
+          <section className="app__category" key={category}>
+            <h2 className="app__category-heading">{category}</h2>
+            <ul className="app__list">
+              {groupItems.map((item) => (
+                <li
+                  key={item.id}
+                  className={`app__item${item.done ? ' app__item--done' : ''}`}
+                >
+                  {editingId === item.id ? (
+                    <form className="app__edit" onSubmit={handleRenameSubmit}>
+                      <input
+                        className="app__input"
+                        type="text"
+                        value={editDraft}
+                        onChange={(event) => setEditDraft(event.target.value)}
+                        aria-label="Item-Name bearbeiten"
+                        autoFocus
+                      />
+                      <button className="app__save" type="submit">
+                        Speichern
+                      </button>
+                      <button
+                        className="app__cancel"
+                        type="button"
+                        onClick={cancelEdit}
+                      >
+                        Abbrechen
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <label className="app__item-label">
+                        <input
+                          className="app__check"
+                          type="checkbox"
+                          checked={item.done}
+                          onChange={() => toggleDone(item.id)}
+                        />
+                        <span className="app__item-name">{item.name}</span>
+                      </label>
+                      <button
+                        className="app__edit-btn"
+                        type="button"
+                        onClick={() => startEdit(item)}
+                        aria-label={`${item.name} bearbeiten`}
+                      >
+                        Bearbeiten
+                      </button>
+                      <button
+                        className="app__delete"
+                        type="button"
+                        onClick={() => deleteItem(item.id)}
+                        aria-label={`${item.name} löschen`}
+                      >
+                        Löschen
+                      </button>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
     </main>
   )

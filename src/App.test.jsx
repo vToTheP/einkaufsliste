@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import App from './App.jsx'
 import { createDb } from './db/database.js'
 import { createRepository, DEFAULT_LIST_ID } from './db/repository.js'
+import { CATEGORY_ORDER } from './categories.js'
 
 // Jeder Test bekommt eine frisch benannte DB + eigenes Repository → Isolation.
 // Persistenz wird über Unmount→Remount geprüft, nicht durch Peeken auf Storage-Keys.
@@ -269,5 +270,67 @@ describe('App – mehrere Listen', () => {
       screen.getByRole('combobox', { name: 'Liste' }),
     ).toHaveDisplayValue('Wocheneinkauf')
     expect(await screen.findByText('Bier')).toBeInTheDocument()
+  })
+})
+
+describe('App – Kategorien', () => {
+  it('gruppiert Items nach Kategorie in fester Standard-Reihenfolge', async () => {
+    renderApp()
+    await screen.findByText('Deine Liste ist leer.')
+
+    // Bewusst in "falscher" Reihenfolge angelegt (Milchprodukte vor Brot).
+    await addItem('Käse')
+    await addItem('Brot')
+
+    const headings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent)
+    const brotIndex = CATEGORY_ORDER.indexOf('Brot & Backwaren')
+    const milchIndex = CATEGORY_ORDER.indexOf('Milchprodukte & Eier')
+    expect(brotIndex).toBeLessThan(milchIndex)
+    expect(headings).toEqual(['Brot & Backwaren', 'Milchprodukte & Eier'])
+  })
+
+  it('zeigt Kategorien ohne Items nicht an', async () => {
+    renderApp()
+    await addItem('Milch')
+
+    expect(
+      screen.queryByRole('heading', { name: 'Getränke' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Milchprodukte & Eier' }),
+    ).toBeInTheDocument()
+  })
+
+  it('ordnet unbekannte Artikel der Kategorie Sonstiges zu', async () => {
+    renderApp()
+    await addItem('Glühbirne')
+
+    expect(
+      screen.getByRole('heading', { name: 'Sonstiges' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Glühbirne')).toBeInTheDocument()
+  })
+
+  it('erlaubt Abhaken und Bearbeiten innerhalb einer Kategorie-Gruppe', async () => {
+    renderApp()
+    await addItem('Milch')
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Milch' }))
+    await screen.findByRole('checkbox', { name: 'Milch', checked: true })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Milch bearbeiten' }))
+    fireEvent.change(screen.getByLabelText('Item-Name bearbeiten'), {
+      target: { value: 'Hafermilch' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(
+      await screen.findByRole('checkbox', { name: 'Hafermilch', checked: true }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Milchprodukte & Eier' }),
+    ).toBeInTheDocument()
   })
 })
