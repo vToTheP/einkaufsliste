@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import App from './App.jsx'
 import { createDb } from './db/database.js'
-import { createRepository } from './db/repository.js'
+import { createRepository, DEFAULT_LIST_ID } from './db/repository.js'
 
 // Jeder Test bekommt eine frisch benannte DB + eigenes Repository → Isolation.
 // Persistenz wird über Unmount→Remount geprüft, nicht durch Peeken auf Storage-Keys.
@@ -24,14 +24,23 @@ function renderApp() {
   return render(<App repository={repo} />)
 }
 
-async function addItem(name) {
-  fireEvent.change(screen.getByLabelText('Neues Item'), {
-    target: { value: name },
+// Gemeinsames Muster für "Draft-Feld befüllen + Formular absenden" hinter
+// addItem/createList: unterscheiden sich nur in Label, Button-Text und der
+// Wartebedingung fürs Ergebnis.
+async function submitDraft(labelText, buttonText, value, waitForResult) {
+  fireEvent.change(screen.getByLabelText(labelText), {
+    target: { value },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Hinzufügen' }))
-  if (name.trim()) {
-    await screen.findByText(name)
+  fireEvent.click(screen.getByRole('button', { name: buttonText }))
+  if (value.trim()) {
+    await waitForResult()
   }
+}
+
+async function addItem(name) {
+  await submitDraft('Neues Item', 'Hinzufügen', name, () =>
+    screen.findByText(name),
+  )
 }
 
 describe('App', () => {
@@ -180,5 +189,85 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
     expect(await screen.findByText('Milch')).toBeInTheDocument()
+  })
+})
+
+describe('App – mehrere Listen', () => {
+  it('zeigt die aktive Liste in der Listenauswahl', async () => {
+    renderApp()
+
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    expect(screen.getByRole('combobox', { name: 'Liste' })).toHaveDisplayValue(
+      'Einkaufsliste',
+    )
+  })
+
+  async function createList(name) {
+    await submitDraft('Neue Liste', 'Liste anlegen', name, () =>
+      screen.findByRole('option', { name: name.trim() }),
+    )
+  }
+
+  it('legt eine neue Liste an, macht sie aktiv und zeigt sie leer', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await addItem('Milch')
+
+    await createList('Wocheneinkauf')
+    await screen.findByRole('option', { name: 'Wocheneinkauf' })
+
+    expect(
+      screen.getByRole('combobox', { name: 'Liste' }),
+    ).toHaveDisplayValue('Wocheneinkauf')
+    expect(await screen.findByText('Deine Liste ist leer.')).toBeInTheDocument()
+    expect(screen.queryByText('Milch')).not.toBeInTheDocument()
+  })
+
+  it('ignoriert eine leere oder nur-Whitespace Listen-Eingabe', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    await createList('')
+    await createList('   ')
+
+    expect(
+      screen.queryByRole('option', { name: '' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+  })
+
+  it('wechselt zwischen Listen und zeigt jeweils die zugeordneten Items', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await addItem('Milch')
+
+    await createList('Wocheneinkauf')
+    await addItem('Bier')
+    expect(screen.getByText('Bier')).toBeInTheDocument()
+    expect(screen.queryByText('Milch')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Liste' }), {
+      target: { value: DEFAULT_LIST_ID },
+    })
+
+    expect(await screen.findByText('Milch')).toBeInTheDocument()
+    expect(screen.queryByText('Bier')).not.toBeInTheDocument()
+  })
+
+  it('behält die aktive Liste nach einem Reload (Unmount→Remount)', async () => {
+    const { unmount } = renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    await createList('Wocheneinkauf')
+    await addItem('Bier')
+    unmount()
+
+    renderApp()
+    await screen.findByRole('option', { name: 'Wocheneinkauf' })
+
+    expect(
+      screen.getByRole('combobox', { name: 'Liste' }),
+    ).toHaveDisplayValue('Wocheneinkauf')
+    expect(await screen.findByText('Bier')).toBeInTheDocument()
   })
 })

@@ -1,11 +1,10 @@
 import Dexie from 'dexie'
 
-// Persistenz-Fundament (Issue #42): IndexedDB via Dexie.
-// Datenmodell (Ziel):
+// Persistenz-Fundament (Issue #42) + Mehrere Listen (Issue #43): IndexedDB via Dexie.
+// Datenmodell:
 //   Liste { id, name, createdAt }
 //   Item  { id, listId, name, done, category, updatedAt }
-// In dieser Slice existiert genau eine (Standard-)Liste; die Multi-Listen-UX
-// folgt in einer späteren Slice.
+//   Meta  { key, value } — u.a. die ID der aktiven Liste (`activeListId`).
 
 export const DB_NAME = 'einkaufsliste'
 
@@ -17,6 +16,12 @@ export function createDb(name = DB_NAME) {
   db.version(1).stores({
     lists: 'id',
     items: '++seq, &id, listId',
+  })
+  // v2: `meta` speichert die ID der aktiven Liste, damit sie einen Reload übersteht.
+  db.version(2).stores({
+    lists: 'id',
+    items: '++seq, &id, listId',
+    meta: 'key',
   })
   return db
 }

@@ -22,6 +22,12 @@ afterEach(async () => {
   await db.delete()
 })
 
+// Für Tests, die (anders als `db`/`repo` oben) eine zweite, unabhängige DB
+// brauchen, z.B. um zwei nebenläufige Repository-Instanzen zu simulieren.
+function freshRepo(suffix) {
+  return createRepository(createDb(`einkaufsliste-${suffix}-${counter}`))
+}
+
 describe('repository – Bootstrap', () => {
   it('legt auf leerem Store eine leere Standardliste an', async () => {
     await repo.init()
@@ -118,6 +124,82 @@ describe('repository – CRUD', () => {
       'Milch',
       'Brot',
     ])
+  })
+})
+
+describe('repository – mehrere Listen', () => {
+  beforeEach(async () => {
+    await repo.init()
+  })
+
+  it('legt eine neue Liste an und listet sie', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+
+    expect(list).toMatchObject({ name: 'Wocheneinkauf' })
+    expect(typeof list.id).toBe('string')
+    expect(typeof list.createdAt).toBe('number')
+
+    const lists = await repo.loadLists()
+    expect(lists.map((l) => l.name)).toEqual([DEFAULT_LIST_NAME, 'Wocheneinkauf'])
+  })
+
+  it('aktiviert die Standardliste beim ersten Bootstrap', async () => {
+    expect(await repo.getActiveListId()).toBe(DEFAULT_LIST_ID)
+  })
+
+  it('wechselt die aktive Liste und übersteht einen Reload (neues Repository, gleiche DB)', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+    await repo.setActiveListId(list.id)
+
+    const reopened = createRepository(db)
+    const activeId = await reopened.init()
+
+    expect(activeId).toBe(list.id)
+    expect(await reopened.getActiveListId()).toBe(list.id)
+  })
+
+  it('Bootstrap überschreibt eine parallel gesetzte aktive Liste nicht (Race)', async () => {
+    // Simuliert: init() (App-Mount) läuft noch, während der Nutzer bereits eine
+    // neue Liste anlegt und aktiviert — die spätere Bootstrap-Antwort darf den
+    // Nutzer-State nicht zurück auf die Standardliste kippen.
+    const fresh = freshRepo('race')
+    const [, created] = await Promise.all([
+      fresh.init(),
+      (async () => {
+        const list = await fresh.createList('Wocheneinkauf')
+        await fresh.setActiveListId(list.id)
+        return list
+      })(),
+    ])
+
+    expect(await fresh.getActiveListId()).toBe(created.id)
+  })
+
+  it('Bootstrap aktiviert eine parallel angelegte Liste statt einer nie existierenden Standardliste', async () => {
+    // Noch enger als die Race oben: Hier ist zum Zeitpunkt des Bootstraps schon
+    // eine Liste angelegt (db.lists nicht mehr leer), aber `setActiveListId`
+    // ist noch nicht gelaufen. Der Bootstrap darf dann nicht eine `default`-ID
+    // aktivieren, die es in `lists` gar nicht gibt.
+    const fresh = freshRepo('race2')
+    const created = await fresh.createList('Wocheneinkauf')
+
+    const activeId = await fresh.init()
+
+    expect(activeId).toBe(created.id)
+    expect(await fresh.loadLists()).toEqual([
+      { id: created.id, name: created.name, createdAt: created.createdAt },
+    ])
+  })
+
+  it('ordnet Items der jeweiligen Liste zu', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+    await repo.addItem('Milch', DEFAULT_LIST_ID)
+    await repo.addItem('Bier', list.id)
+
+    expect((await repo.loadItems(DEFAULT_LIST_ID)).map((i) => i.name)).toEqual([
+      'Milch',
+    ])
+    expect((await repo.loadItems(list.id)).map((i) => i.name)).toEqual(['Bier'])
   })
 })
 

@@ -7,6 +7,7 @@ import { db as defaultDb, openDb } from './database.js'
 export const DEFAULT_LIST_ID = 'default'
 export const DEFAULT_LIST_NAME = 'Einkaufsliste'
 export const LEGACY_STORAGE_KEY = 'einkaufsliste:items'
+const ACTIVE_LIST_META_KEY = 'activeListId'
 
 function newId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -15,17 +16,37 @@ function newId() {
       String(Date.now()) + Math.random().toString(16).slice(2)
 }
 
+// Monoton steigend statt reines Date.now(): Listen haben (anders als Items via
+// `seq`) keinen Auto-Increment-Schlüssel, der die Einfüge-Reihenfolge bewahrt.
+// `createdAt` übernimmt diese Rolle mit als Sortierschlüssel — zwei Aufrufe
+// innerhalb derselben Millisekunde dürfen daher nie denselben Wert liefern.
+let lastTimestamp = 0
 function now() {
-  return Date.now()
+  const current = Date.now()
+  lastTimestamp = current > lastTimestamp ? current : lastTimestamp + 1
+  return lastTimestamp
 }
 
-// Nur gültige Item-Datensätze in die UI lassen (robust gegen beschädigte Records).
-function isValidItem(record) {
+// Nur gültige Item-/Listen-Datensätze in die UI lassen (robust gegen
+// beschädigte Records) — beide brauchen mindestens eine `id` und einen `name`.
+function hasIdAndName(record) {
   return (
     record &&
     typeof record.id === 'string' &&
     typeof record.name === 'string'
   )
+}
+
+function byCreatedAt(a, b) {
+  return a.createdAt - b.createdAt
+}
+
+function toList(record) {
+  return {
+    id: record.id,
+    name: record.name,
+    createdAt: record.createdAt ?? null,
+  }
 }
 
 function toItem(record) {
@@ -50,30 +71,71 @@ export function createRepository(db = defaultDb) {
     }
   }
 
-  async function ensureDefaultList() {
-    const existing = await db.lists.get(DEFAULT_LIST_ID)
-    if (existing) return existing
-    const list = {
-      id: DEFAULT_LIST_ID,
-      name: DEFAULT_LIST_NAME,
-      createdAt: now(),
-    }
-    await db.lists.put(list)
-    return list
+  async function getActiveListId() {
+    const record = await db.meta.get(ACTIVE_LIST_META_KEY)
+    return record?.value ?? null
   }
 
-  // Bootstrap: robustes Öffnen, Standardliste sicherstellen, Legacy aufräumen.
+  async function setActiveListId(id) {
+    await db.meta.put({ key: ACTIVE_LIST_META_KEY, value: id })
+  }
+
+  // Bootstrap: existiert keine Liste, wird eine leere Standardliste angelegt und
+  // aktiviert. Sonst bleibt die zuletzt aktive Liste aktiv (Reload). Gibt die
+  // ID der aktiven Liste zurück.
+  //
+  // Läuft als eine atomare Dexie-Transaktion: Lesen ("gibt es schon eine aktive
+  // Liste?") und bedingtes Schreiben dürfen nicht auseinanderfallen. Sonst kann
+  // ein paralleler `createList` + `setActiveListId` (z.B. Nutzer legt sofort
+  // beim App-Start eine Liste an, während der Bootstrap noch läuft) dazwischen
+  // laufen — der Bootstrap würde die frisch aktivierte Liste sonst wieder auf
+  // die Standardliste zurücksetzen. Aus demselben Grund zählt "existiert schon
+  // eine Liste?" nicht nur die Standardliste, sondern jede Liste: Ist durch so
+  // einen parallelen Aufruf bereits eine (andere) Liste entstanden, aktiviert
+  // der Bootstrap genau die — statt eine nie angelegte `default`-ID zu setzen.
+  async function ensureActiveList() {
+    return db.transaction('rw', db.lists, db.meta, async () => {
+      const activeId = await getActiveListId()
+      if (activeId) return activeId
+
+      const existingLists = await db.lists.toArray()
+      const [oldest] = existingLists.sort(byCreatedAt)
+      const list = oldest ?? {
+        id: DEFAULT_LIST_ID,
+        name: DEFAULT_LIST_NAME,
+        createdAt: now(),
+      }
+      if (!oldest) await db.lists.add(list)
+      await setActiveListId(list.id)
+      return list.id
+    })
+  }
+
+  // Bootstrap: robustes Öffnen, aktive Liste sicherstellen, Legacy aufräumen.
   async function init() {
     cleanupLegacyStorage()
     await openDb(db)
-    await ensureDefaultList()
-    return DEFAULT_LIST_ID
+    return ensureActiveList()
+  }
+
+  async function createList(name) {
+    const list = { id: newId(), name, createdAt: now() }
+    await db.lists.add(list)
+    return list
+  }
+
+  async function loadLists() {
+    const records = await db.lists.toArray()
+    return records
+      .filter(hasIdAndName)
+      .sort(byCreatedAt)
+      .map(toList)
   }
 
   async function loadItems(listId = DEFAULT_LIST_ID) {
     const records = await db.items.where('listId').equals(listId).toArray()
     return records
-      .filter(isValidItem)
+      .filter(hasIdAndName)
       .sort((a, b) => a.seq - b.seq)
       .map(toItem)
   }
@@ -111,6 +173,10 @@ export function createRepository(db = defaultDb) {
 
   return {
     init,
+    createList,
+    loadLists,
+    getActiveListId,
+    setActiveListId,
     loadItems,
     addItem,
     setDone,
