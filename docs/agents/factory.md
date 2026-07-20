@@ -44,11 +44,14 @@ Takt wieder verdichtet werden.
 
 - **Auto-fix läuft schon** (nativ, aktiviert in `/implement-next`): reagiert auf
   Review-Kommentare + CI-Failures, pusht Fixes, antwortet, resolved.
-- **Der unabhängige Reviewer** ist **Ultrareview** (`/code-review ultra <PR>`) — läuft aus dem
-  **Pro-Quota-Topf** (keine $-API-Kosten), aber ist **user-getriggert**. Er wird als eigene
-  Cloud-Routine/Trigger auf neue Fabrik-PRs eingerichtet (siehe Checkliste). Kein Self-Review.
-- ⚠️ **Quota-Konkurrenz:** Ultrareview zieht aus **demselben** Pro-Topf wie die Slices — jeder
-  automatische Review kostet Quota, die sonst eine Slice wäre. In die Kalibrierung einrechnen.
+- **Reviewer = Ultrareview, MANUELL durch Vincent beim Merge** (`/code-review ultra <PR>`,
+  Pro-Quota-Topf, keine $-API-Kosten). Kein Self-Review.
+- ❌ **Getestet & verworfen (2026-07-20): Cron-getriggerte Ultrareview geht NICHT.** Eine
+  Cloud-/Routine-Session kann `/code-review ultra` nicht ausführen — das Command ist dort
+  nicht verfügbar und bietet nur einen lokalen Fallback an. Eine dedizierte Review-Routine
+  wurde daher wieder deaktiviert. Automatisierter, unabhängiger Reviewer bleibt offen;
+  Kandidaten: **GitHub Copilot Review** (~$10/mo flat, kein Quota, voll automatisch) oder
+  eine **Claude-Action auf PR-Event** (API-Key → $-Kosten). Bis dahin: manuell beim Merge.
 
 ## Kalibrierung (empirisch nachziehen)
 
@@ -69,14 +72,22 @@ Takt wieder verdichtet werden.
 - **Fabrik pausieren:** `.factory-paused` anlegen und committen (`touch .factory-paused`),
   auf `main` pushen. Wieder starten: Datei löschen und pushen.
 - **Notfall-Drosselung passiert automatisch** über PR-Cap und CI-Guardrail.
+- **Visuelle Snapshots nach UI-Änderungen:** Intendierte UI-Änderungen brechen die
+  Playwright-Baselines (`e2e/**/*-chromium-linux.png`) — die Fabrik kann das nicht selbst
+  grün bekommen (Baselines nur im chromium-linux-Container erzeugbar). Fix: Workflow
+  **„Update visual snapshots"** (`.github/workflows/update-snapshots.yml`) manuell auf dem
+  PR-Branch auslösen (Actions → Workflow → Branch angeben). Er regeneriert die Baselines im
+  Container und committet sie zurück. Setzt das Secret `SNAPSHOT_PUSH_TOKEN` voraus (s.
+  Checkliste), sonst triggert der Push die e2e-CI nicht neu.
 
 ## Setup-Checkliste (Cloud-Teile — von Vincent einzurichten)
 
 - [ ] **Cron-Routine** via `/schedule`: alle 6 h, Prompt = `/factory-run`. Ersetzt den alten
       Routine-Prompt, der bei jedem offenen PR abbrach. (Takt bewusst konservativ, s. „Warum 6 h".)
-- [ ] **Review-Routine**: Trigger für `/code-review ultra <PR>` auf neue Fabrik-PRs
-      einrichten. Vorab verifizieren, ob eine Routine Ultrareview überhaupt auslösen darf —
-      sonst per PR-Label oder manuell reviewen.
+- [x] ~~Review-Routine für `/code-review ultra`~~ — **verworfen**: Cron kann Ultrareview
+      nicht auslösen (s. Review-Zyklus). Review bleibt vorerst manuell beim Merge.
+- [ ] **Secret `SNAPSHOT_PUSH_TOKEN`** anlegen (Fine-grained PAT, Contents: Read/Write) —
+      damit der „Update visual snapshots"-Workflow pushen kann und die CI erneut triggert.
 - [ ] Nach den ersten Nächten: Verbrauch messen und Cron-Takt / PR-Cap kalibrieren.
 
 ## Projekt 2 & 3 (Replikation)
