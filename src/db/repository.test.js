@@ -201,6 +201,71 @@ describe('repository – mehrere Listen', () => {
     ])
     expect((await repo.loadItems(list.id)).map((i) => i.name)).toEqual(['Bier'])
   })
+
+  it('benennt eine Liste um', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+
+    await repo.renameList(list.id, 'Grillfest')
+
+    const lists = await repo.loadLists()
+    expect(lists.find((l) => l.id === list.id)).toMatchObject({
+      name: 'Grillfest',
+      createdAt: list.createdAt,
+    })
+  })
+
+  it('entfernt eine Liste dauerhaft samt ihrer Items', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+    await repo.addItem('Bier', list.id)
+
+    await repo.removeList(list.id)
+
+    expect((await repo.loadLists()).map((l) => l.id)).toEqual([DEFAULT_LIST_ID])
+    expect(await repo.loadItems(list.id)).toEqual([])
+  })
+
+  it('Guard: die letzte verbliebene Liste kann nicht gelöscht werden', async () => {
+    await repo.addItem('Milch', DEFAULT_LIST_ID)
+
+    await repo.removeList(DEFAULT_LIST_ID)
+
+    expect((await repo.loadLists()).map((l) => l.id)).toEqual([DEFAULT_LIST_ID])
+    expect(await repo.loadItems(DEFAULT_LIST_ID)).toHaveLength(1)
+  })
+
+  it('Löschen der aktiven Liste setzt automatisch eine andere Liste aktiv', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+    await repo.setActiveListId(list.id)
+
+    const newActiveId = await repo.removeList(list.id)
+
+    expect(newActiveId).toBe(DEFAULT_LIST_ID)
+    expect(await repo.getActiveListId()).toBe(DEFAULT_LIST_ID)
+  })
+
+  it('Löschen einer inaktiven Liste lässt die aktive Liste unverändert', async () => {
+    const list = await repo.createList('Wocheneinkauf')
+
+    const newActiveId = await repo.removeList(list.id)
+
+    expect(newActiveId).toBe(DEFAULT_LIST_ID)
+    expect(await repo.getActiveListId()).toBe(DEFAULT_LIST_ID)
+  })
+
+  it('Umbenennung und Löschung überstehen einen Reload (neues Repository, gleiche DB)', async () => {
+    const keep = await repo.createList('Wocheneinkauf')
+    const gone = await repo.createList('Grillfest')
+    await repo.renameList(keep.id, 'Wochenendeinkauf')
+    await repo.removeList(gone.id)
+
+    const reopened = createRepository(db)
+    await reopened.init()
+
+    expect((await reopened.loadLists()).map((l) => l.name)).toEqual([
+      DEFAULT_LIST_NAME,
+      'Wochenendeinkauf',
+    ])
+  })
 })
 
 describe('repository – Robustheit', () => {
