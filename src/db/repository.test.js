@@ -291,6 +291,80 @@ describe('repository – mehrere Listen', () => {
   })
 })
 
+describe('repository – Zuletzt verwendet', () => {
+  beforeEach(async () => {
+    await repo.init()
+  })
+
+  it('erledigtes Item bleibt in der Liste, zählt aber als Zuletzt verwendet (done: true)', async () => {
+    const item = await repo.addItem('Milch')
+    await repo.setDone(item.id, true)
+
+    const items = await repo.loadItems()
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ id: item.id, done: true })
+  })
+
+  it('reaktiviert ein archiviertes Item wieder als offen', async () => {
+    const item = await repo.addItem('Milch')
+    await repo.setDone(item.id, true)
+
+    const reactivated = await repo.reactivateItem(item.id)
+
+    expect(reactivated).toMatchObject({ id: item.id, name: 'Milch', done: false })
+    expect((await repo.loadItems())[0]).toMatchObject({ done: false })
+  })
+
+  it('dedupliziert: existiert bereits ein offenes Item gleichen Namens, bleibt das archivierte unverändert', async () => {
+    const archived = await repo.addItem('Milch')
+    await repo.setDone(archived.id, true)
+    await repo.addItem('Milch')
+
+    const result = await repo.reactivateItem(archived.id)
+
+    expect(result).toMatchObject({ id: archived.id, done: true })
+    const items = await repo.loadItems()
+    expect(items.filter((i) => i.name === 'Milch' && !i.done)).toHaveLength(1)
+    expect(items.filter((i) => i.name === 'Milch' && i.done)).toHaveLength(1)
+  })
+
+  it('Dedup gilt pro Liste: gleicher Name in anderer Liste blockiert die Reaktivierung nicht', async () => {
+    const otherList = await repo.createList('Wocheneinkauf')
+    const archived = await repo.addItem('Milch')
+    await repo.setDone(archived.id, true)
+    await repo.addItem('Milch', otherList.id)
+
+    const result = await repo.reactivateItem(archived.id)
+
+    expect(result).toMatchObject({ id: archived.id, done: false })
+  })
+
+  it('entfernt ein archiviertes Item endgültig', async () => {
+    const item = await repo.addItem('Milch')
+    await repo.setDone(item.id, true)
+
+    await repo.removeItem(item.id)
+
+    expect(await repo.loadItems()).toEqual([])
+  })
+
+  it('überdauert Archivierung und Reaktivierung einen Reload (neues Repository, gleiche DB)', async () => {
+    const item = await repo.addItem('Milch')
+    await repo.setDone(item.id, true)
+
+    const reopened = createRepository(db)
+    await reopened.init()
+
+    expect((await reopened.loadItems())[0]).toMatchObject({ done: true })
+
+    await reopened.reactivateItem(item.id)
+    const reopenedAgain = createRepository(db)
+    await reopenedAgain.init()
+
+    expect((await reopenedAgain.loadItems())[0]).toMatchObject({ done: false })
+  })
+})
+
 describe('repository – Robustheit', () => {
   it('filtert beschädigte Item-Records beim Laden heraus (kein Crash)', async () => {
     await repo.init()

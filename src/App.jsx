@@ -119,22 +119,34 @@ export default function App({ repository = defaultRepository }) {
     setDraft((current) => (current === submitted ? '' : current))
   }
 
-  async function toggleDone(id) {
+  // Abhaken verschiebt ein Item nach „Zuletzt verwendet" statt es nur
+  // durchzustreichen (Issue #46) — die aktive Liste zeigt ausschließlich
+  // offene Items, daher gibt es hier kein Zurück-Toggeln mehr über dieselbe
+  // Checkbox; das übernimmt reactivateItem.
+  async function archiveItem(id) {
     const current = items.find((item) => item.id === id)
     if (!current) return
-    const done = !current.done
     // UI synchron aktualisieren: eine kontrollierte Checkbox, deren onChange den
     // State erst nach einem await ändert, würde von React sofort zurückgesetzt.
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, done } : item)),
+      prev.map((item) => (item.id === id ? { ...item, done: true } : item)),
     )
-    await repository.setDone(id, done)
+    await repository.setDone(id, true)
+    if (editingId === id) setEditingId(null)
   }
 
-  async function deleteItem(id) {
+  // Reaktivieren holt ein archiviertes Item zurück auf die aktive Liste.
+  // Dedup (steht bereits ein offenes Item gleichen Namens da?) läuft im
+  // Repository gegen den echten DB-Stand, nicht gegen den lokalen State.
+  async function reactivateItem(id) {
+    const updated = await repository.reactivateItem(id)
+    if (!updated) return
+    setItems((prev) => prev.map((item) => (item.id === id ? updated : item)))
+  }
+
+  async function permanentlyRemoveItem(id) {
     await repository.removeItem(id)
     setItems((prev) => prev.filter((item) => item.id !== id))
-    if (editingId === id) setEditingId(null)
   }
 
   function startEdit(item) {
@@ -163,6 +175,11 @@ export default function App({ repository = defaultRepository }) {
     setEditingId(null)
     setEditDraft('')
   }
+
+  // Aktive Liste zeigt nur offene Items; erledigte/entfernte landen in
+  // „Zuletzt verwendet" statt zu verschwinden (Issue #46).
+  const openItems = items.filter((item) => !item.done)
+  const recentlyUsedItems = items.filter((item) => item.done)
 
   function startEditList(list) {
     setEditingListId(list.id)
@@ -297,18 +314,15 @@ export default function App({ repository = defaultRepository }) {
         </button>
       </form>
 
-      {ready && items.length === 0 ? (
+      {ready && openItems.length === 0 ? (
         <p className="app__empty">Deine Liste ist leer.</p>
       ) : (
-        groupByCategory(items).map(([category, groupItems]) => (
+        groupByCategory(openItems).map(([category, groupItems]) => (
           <section className="app__category" key={category}>
             <h2 className="app__category-heading">{category}</h2>
             <ul className="app__list">
               {groupItems.map((item) => (
-                <li
-                  key={item.id}
-                  className={`app__item${item.done ? ' app__item--done' : ''}`}
-                >
+                <li key={item.id} className="app__item">
                   {editingId === item.id ? (
                     <form className="app__edit" onSubmit={handleRenameSubmit}>
                       <input
@@ -336,8 +350,8 @@ export default function App({ repository = defaultRepository }) {
                         <input
                           className="app__check"
                           type="checkbox"
-                          checked={item.done}
-                          onChange={() => toggleDone(item.id)}
+                          checked={false}
+                          onChange={() => archiveItem(item.id)}
                         />
                         <span className="app__item-name">{item.name}</span>
                       </label>
@@ -352,10 +366,10 @@ export default function App({ repository = defaultRepository }) {
                       <button
                         className="app__delete"
                         type="button"
-                        onClick={() => deleteItem(item.id)}
-                        aria-label={`${item.name} löschen`}
+                        onClick={() => archiveItem(item.id)}
+                        aria-label={`${item.name} entfernen`}
                       >
-                        Löschen
+                        Entfernen
                       </button>
                     </>
                   )}
@@ -364,6 +378,33 @@ export default function App({ repository = defaultRepository }) {
             </ul>
           </section>
         ))
+      )}
+
+      {recentlyUsedItems.length > 0 && (
+        <section className="app__recently-used">
+          <h2>Zuletzt verwendet</h2>
+          <ul className="app__recently-used-list">
+            {recentlyUsedItems.map((item) => (
+              <li key={item.id} className="app__recently-used-item">
+                <span className="app__item-name">{item.name}</span>
+                <button
+                  type="button"
+                  onClick={() => reactivateItem(item.id)}
+                  aria-label={`${item.name} reaktivieren`}
+                >
+                  Reaktivieren
+                </button>
+                <button
+                  type="button"
+                  onClick={() => permanentlyRemoveItem(item.id)}
+                  aria-label={`${item.name} endgültig entfernen`}
+                >
+                  Endgültig entfernen
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   )

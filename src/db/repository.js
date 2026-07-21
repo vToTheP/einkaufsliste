@@ -172,6 +172,27 @@ export function createRepository(db = defaultDb) {
     await db.items.where('id').equals(id).delete()
   }
 
+  // Zuletzt verwendet (Issue #46): erledigte Items (`done: true`) bleiben in der
+  // Liste und gelten als archiviert, statt gelöscht zu werden. `reactivateItem`
+  // holt ein archiviertes Item zurück auf `done: false` — außer es steht (pro
+  // Liste) bereits ein offenes Item mit demselben Namen da; dann bliebe das
+  // Zurückholen ein Duplikat und das archivierte Item bleibt unverändert.
+  async function reactivateItem(id) {
+    const record = await db.items.where('id').equals(id).first()
+    if (!record) return null
+
+    const duplicateOpen = await db.items
+      .where('listId')
+      .equals(record.listId)
+      .filter((entry) => entry.done !== true && entry.name === record.name)
+      .first()
+    if (duplicateOpen) return toItem(record)
+
+    const updatedAt = now()
+    await db.items.where('id').equals(id).modify({ done: false, updatedAt })
+    return toItem({ ...record, done: false, updatedAt })
+  }
+
   async function renameList(id, name) {
     await db.lists.where('id').equals(id).modify({ name })
   }
@@ -212,6 +233,7 @@ export function createRepository(db = defaultDb) {
     setDone,
     renameItem,
     removeItem,
+    reactivateItem,
     renameList,
     removeList,
   }
