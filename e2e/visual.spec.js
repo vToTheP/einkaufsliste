@@ -37,11 +37,13 @@ test('Liste mit Items', async ({ page }) => {
   await expect(appView(page)).toHaveScreenshot('with-items.png')
 })
 
-test('Item erledigt', async ({ page }) => {
+test('Item in Zuletzt verwendet', async ({ page }) => {
   await addItem(page, 'Milch')
   await addItem(page, 'Brot')
-  await page.getByRole('checkbox', { name: 'Brot' }).check()
-  await expect(page.getByRole('checkbox', { name: 'Brot' })).toBeChecked()
+  await page.getByRole('checkbox', { name: 'Brot' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Brot reaktivieren' }),
+  ).toBeVisible()
 
-  await expect(appView(page)).toHaveScreenshot('item-done.png')
+  await expect(appView(page)).toHaveScreenshot('item-archived.png')
 })

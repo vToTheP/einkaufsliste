@@ -58,17 +58,33 @@ test('fügt ein Item hinzu und zeigt es an', async ({ page }) => {
   await expect(page.getByText('Deine Liste ist leer.')).toBeHidden()
 })
 
-test('hakt ein Item ab und wieder zurück', async ({ page }) => {
+test('verschiebt ein Item beim Abhaken nach Zuletzt verwendet', async ({ page }) => {
   await addItem(page, 'Milch')
 
   const checkbox = page.getByRole('checkbox', { name: 'Milch' })
   await expect(checkbox).not.toBeChecked()
 
-  await checkbox.check()
-  await expect(checkbox).toBeChecked()
+  await checkbox.click()
 
-  await checkbox.uncheck()
+  await expect(page.getByText('Deine Liste ist leer.')).toBeVisible()
+  await expect(checkbox).toBeHidden()
+  await expect(
+    page.getByRole('button', { name: 'Milch reaktivieren' }),
+  ).toBeVisible()
+})
+
+test('reaktiviert ein Item aus Zuletzt verwendet wieder als offen', async ({ page }) => {
+  await addItem(page, 'Milch')
+  await page.getByRole('checkbox', { name: 'Milch' }).click()
+
+  await page.getByRole('button', { name: 'Milch reaktivieren' }).click()
+
+  const checkbox = page.getByRole('checkbox', { name: 'Milch' })
+  await expect(checkbox).toBeVisible()
   await expect(checkbox).not.toBeChecked()
+  await expect(
+    page.getByRole('button', { name: 'Milch reaktivieren' }),
+  ).toBeHidden()
 })
 
 test('benennt ein Item um', async ({ page }) => {
@@ -82,25 +98,48 @@ test('benennt ein Item um', async ({ page }) => {
   await expect(page.getByText('Milch', { exact: true })).toBeHidden()
 })
 
-test('löscht ein Item dauerhaft', async ({ page }) => {
+test('verschiebt ein Item beim Entfernen ebenfalls nach Zuletzt verwendet', async ({
+  page,
+}) => {
   await addItem(page, 'Milch')
 
-  await page.getByRole('button', { name: 'Milch löschen' }).click()
+  await page.getByRole('button', { name: 'Milch entfernen' }).click()
 
-  await expect(page.getByText('Milch')).toBeHidden()
   await expect(page.getByText('Deine Liste ist leer.')).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Milch reaktivieren' }),
+  ).toBeVisible()
 })
 
-test('behält Items und erledigt-Zustand nach einem Reload', async ({ page }) => {
+test('entfernt ein archiviertes Item über "Endgültig entfernen" dauerhaft', async ({
+  page,
+}) => {
+  await addItem(page, 'Milch')
+  await page.getByRole('checkbox', { name: 'Milch' }).click()
+
+  await page
+    .getByRole('button', { name: 'Milch endgültig entfernen' })
+    .click()
+
+  await expect(
+    page.getByRole('button', { name: 'Milch reaktivieren' }),
+  ).toBeHidden()
+  await expect(page.getByText('Milch')).toBeHidden()
+})
+
+test('behält offene und Zuletzt-verwendet-Items nach einem Reload', async ({
+  page,
+}) => {
   await addItem(page, 'Milch')
   await addItem(page, 'Brot')
-  await page.getByRole('checkbox', { name: 'Brot' }).check()
+  await page.getByRole('checkbox', { name: 'Brot' }).click()
 
   // Warten, bis der optimistische Toggle durablen IndexedDB-State erreicht hat.
   await waitForPersisted(page, 'Brot', true)
   await page.reload()
 
-  await expect(page.getByText('Milch')).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Milch' })).not.toBeChecked()
-  await expect(page.getByRole('checkbox', { name: 'Brot' })).toBeChecked()
+  await expect(
+    page.getByRole('button', { name: 'Brot reaktivieren' }),
+  ).toBeVisible()
 })
