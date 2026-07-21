@@ -44,7 +44,9 @@ jobs:
           # Nur ein Boolean im Log — der PAT selbst wird nicht in die Shell interpoliert.
           HAS_PAT: ${{ secrets.SNAPSHOT_PUSH_TOKEN != '' }}
         run: |
-          set -euo pipefail
+          # Der Playwright-Container hat kein bash in PATH → GitHub nutzt sh (dash).
+          # dash kennt kein "set -o pipefail"; das Skript hat ohnehin keine Pipes.
+          set -eu
           # Container läuft als root über gemountetem Workspace → safe.directory nötig.
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
