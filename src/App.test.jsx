@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import App from './App.jsx'
 import { createDb } from './db/database.js'
@@ -270,6 +270,83 @@ describe('App – mehrere Listen', () => {
       screen.getByRole('combobox', { name: 'Liste' }),
     ).toHaveDisplayValue('Wocheneinkauf')
     expect(await screen.findByText('Bier')).toBeInTheDocument()
+  })
+
+  it('benennt die aktive Liste um', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Liste umbenennen' }))
+    fireEvent.change(screen.getByLabelText('Listenname bearbeiten'), {
+      target: { value: 'Wochenendeinkauf' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    await screen.findByRole('option', { name: 'Wochenendeinkauf' })
+    expect(
+      screen.getByRole('combobox', { name: 'Liste' }),
+    ).toHaveDisplayValue('Wochenendeinkauf')
+  })
+
+  it('ignoriert eine leere Listen-Umbenennung', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Liste umbenennen' }))
+    fireEvent.change(screen.getByLabelText('Listenname bearbeiten'), {
+      target: { value: '   ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(
+      await screen.findByRole('option', { name: 'Einkaufsliste' }),
+    ).toBeInTheDocument()
+  })
+
+  it('behält die umbenannte Liste nach einem Reload', async () => {
+    const { unmount } = renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Liste umbenennen' }))
+    fireEvent.change(screen.getByLabelText('Listenname bearbeiten'), {
+      target: { value: 'Wochenendeinkauf' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    await screen.findByRole('option', { name: 'Wochenendeinkauf' })
+    unmount()
+
+    renderApp()
+    expect(
+      await screen.findByRole('option', { name: 'Wochenendeinkauf' }),
+    ).toBeInTheDocument()
+  })
+
+  it('Guard: der Löschen-Button ist deaktiviert, solange nur eine Liste existiert', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    expect(screen.getByRole('button', { name: 'Liste löschen' })).toBeDisabled()
+  })
+
+  it('löscht die aktive Liste und macht eine andere Liste aktiv', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await addItem('Milch')
+
+    await createList('Wocheneinkauf')
+    await addItem('Bier')
+    fireEvent.click(screen.getByRole('button', { name: 'Liste löschen' }))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('option', { name: 'Wocheneinkauf' }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(
+      screen.getByRole('combobox', { name: 'Liste' }),
+    ).toHaveDisplayValue('Einkaufsliste')
+    expect(await screen.findByText('Milch')).toBeInTheDocument()
+    expect(screen.queryByText('Bier')).not.toBeInTheDocument()
   })
 })
 
