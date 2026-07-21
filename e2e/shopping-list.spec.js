@@ -54,7 +54,7 @@ test('startet mit leerer Liste', async ({ page }) => {
 test('fügt ein Item hinzu und zeigt es an', async ({ page }) => {
   await addItem(page, 'Milch')
 
-  await expect(page.getByText('Milch')).toBeVisible()
+  await expect(page.getByText('Milch', { exact: true })).toBeVisible()
   await expect(page.getByText('Deine Liste ist leer.')).toBeHidden()
 })
 
@@ -87,7 +87,7 @@ test('löscht ein Item dauerhaft', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Milch löschen' }).click()
 
-  await expect(page.getByText('Milch')).toBeHidden()
+  await expect(page.getByText('Milch', { exact: true })).toBeHidden()
   await expect(page.getByText('Deine Liste ist leer.')).toBeVisible()
 })
 
@@ -100,7 +100,7 @@ test('behält Items und erledigt-Zustand nach einem Reload', async ({ page }) =>
   await waitForPersisted(page, 'Brot', true)
   await page.reload()
 
-  await expect(page.getByText('Milch')).toBeVisible()
+  await expect(page.getByText('Milch', { exact: true })).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Milch' })).not.toBeChecked()
   await expect(page.getByRole('checkbox', { name: 'Brot' })).toBeChecked()
 })

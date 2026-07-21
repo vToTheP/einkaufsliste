@@ -1,4 +1,5 @@
 import { db as defaultDb, openDb } from './database.js'
+import { categorize } from '../categories.js'
 
 // Repository-Grenze: Die UI spricht ausschließlich mit diesem Modul, nie direkt
 // mit Dexie/IndexedDB. Alle Methoden sind async und geben fachliche Objekte
@@ -146,7 +147,7 @@ export function createRepository(db = defaultDb) {
       listId,
       name,
       done: false,
-      category: null,
+      category: categorize(name),
       updatedAt: now(),
     }
     await db.items.add(item)

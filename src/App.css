@@ -44,6 +44,16 @@
   margin-top: 3rem;
 }
 
+.app__category + .app__category {
+  margin-top: 1.5rem;
+}
+
+.app__category-heading {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--color-muted);
+}
+
 .app__list {
   list-style: none;
   margin: 0;
