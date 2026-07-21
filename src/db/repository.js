@@ -1,4 +1,5 @@
 import { db as defaultDb, openDb } from './database.js'
+import { categorize } from '../categories.js'
 
 // Repository-Grenze: Die UI spricht ausschließlich mit diesem Modul, nie direkt
 // mit Dexie/IndexedDB. Alle Methoden sind async und geben fachliche Objekte
@@ -146,7 +147,7 @@ export function createRepository(db = defaultDb) {
       listId,
       name,
       done: false,
-      category: null,
+      category: categorize(name),
       updatedAt: now(),
     }
     await db.items.add(item)
@@ -192,6 +193,35 @@ export function createRepository(db = defaultDb) {
     return toItem({ ...record, done: false, updatedAt })
   }
 
+  async function renameList(id, name) {
+    await db.lists.where('id').equals(id).modify({ name })
+  }
+
+  // Löscht eine Liste samt ihrer Items. Guard: die letzte verbliebene Liste
+  // bleibt erhalten (es gibt sonst keine Liste mehr, auf die die App zeigen
+  // könnte). War die gelöschte Liste aktiv, übernimmt eine verbleibende Liste
+  // (die älteste) automatisch die Aktivierung. Läuft als eine Transaktion,
+  // damit "Guard prüfen" + Löschen + ggf. Aktiv-Liste-Umschalten atomar bleiben
+  // (analog zu `ensureActiveList`). Gibt die aktive Listen-ID nach der
+  // Operation zurück (unverändert, falls die gelöschte Liste nicht aktiv war
+  // oder der Guard griff).
+  async function removeList(id) {
+    return db.transaction('rw', db.lists, db.items, db.meta, async () => {
+      const count = await db.lists.count()
+      if (count <= 1) return getActiveListId()
+
+      await db.lists.where('id').equals(id).delete()
+      await db.items.where('listId').equals(id).delete()
+
+      const activeId = await getActiveListId()
+      if (activeId !== id) return activeId
+
+      const [next] = (await db.lists.toArray()).sort(byCreatedAt)
+      await setActiveListId(next.id)
+      return next.id
+    })
+  }
+
   return {
     init,
     createList,
@@ -204,6 +234,8 @@ export function createRepository(db = defaultDb) {
     renameItem,
     removeItem,
     reactivateItem,
+    renameList,
+    removeList,
   }
 }
 

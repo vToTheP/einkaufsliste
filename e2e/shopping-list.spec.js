@@ -54,7 +54,7 @@ test('startet mit leerer Liste', async ({ page }) => {
 test('fügt ein Item hinzu und zeigt es an', async ({ page }) => {
   await addItem(page, 'Milch')
 
-  await expect(page.getByText('Milch')).toBeVisible()
+  await expect(page.getByText('Milch', { exact: true })).toBeVisible()
   await expect(page.getByText('Deine Liste ist leer.')).toBeHidden()
 })
 

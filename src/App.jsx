@@ -4,6 +4,7 @@ import {
   repository as defaultRepository,
   DEFAULT_LIST_ID,
 } from './db/repository.js'
+import { groupByCategory } from './categories.js'
 
 // Führt den initialen Persistenz-Load mit dem aktuellen UI-State zusammen, ohne
 // bereits getätigte User-Aktionen zu überschreiben: Löst der Load (z.B. auf
@@ -33,6 +34,8 @@ export default function App({ repository = defaultRepository }) {
   const [listDraft, setListDraft] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState('')
+  const [editingListId, setEditingListId] = useState(null)
+  const [editListDraft, setEditListDraft] = useState('')
   // Hat der Nutzer die aktive Liste bereits selbst gewechselt/angelegt, bevor
   // der (asynchrone) Bootstrap-Load aufgelöst hat, ist dessen Ergebnis für
   // Aktiv-Liste + Items veraltet — es darf die Nutzeraktion dann nicht mehr
@@ -178,6 +181,48 @@ export default function App({ repository = defaultRepository }) {
   const openItems = items.filter((item) => !item.done)
   const recentlyUsedItems = items.filter((item) => item.done)
 
+  function startEditList(list) {
+    setEditingListId(list.id)
+    setEditListDraft(list.name)
+  }
+
+  function cancelEditList() {
+    setEditingListId(null)
+    setEditListDraft('')
+  }
+
+  async function handleRenameListSubmit(event) {
+    event.preventDefault()
+    const name = editListDraft.trim()
+    if (!name) {
+      cancelEditList()
+      return
+    }
+    await repository.renameList(editingListId, name)
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id === editingListId ? { ...list, name } : list,
+      ),
+    )
+    setEditingListId(null)
+    setEditListDraft('')
+  }
+
+  // Guard (letzte Liste bleibt): UI verhindert den Löschversuch bereits hier,
+  // bevor er das Repository erreicht.
+  async function deleteList(id) {
+    if (lists.length <= 1) return
+    userSwitchedListRef.current = true
+    const newActiveId = await repository.removeList(id)
+    setLists((prev) => prev.filter((list) => list.id !== id))
+    if (editingListId === id) cancelEditList()
+    if (newActiveId !== activeListId) {
+      applyActiveList(newActiveId, await repository.loadItems(newActiveId))
+    }
+  }
+
+  const activeList = lists.find((list) => list.id === activeListId)
+
   return (
     <main className="app">
       <header className="app__header">
@@ -197,6 +242,49 @@ export default function App({ repository = defaultRepository }) {
             </option>
           ))}
         </select>
+        {activeList &&
+          (editingListId === activeList.id ? (
+            <form className="app__edit" onSubmit={handleRenameListSubmit}>
+              <input
+                className="app__input"
+                type="text"
+                value={editListDraft}
+                onChange={(event) => setEditListDraft(event.target.value)}
+                aria-label="Listenname bearbeiten"
+                autoFocus
+              />
+              <button className="app__save" type="submit">
+                Speichern
+              </button>
+              <button
+                className="app__cancel"
+                type="button"
+                onClick={cancelEditList}
+              >
+                Abbrechen
+              </button>
+            </form>
+          ) : (
+            <>
+              <button
+                className="app__edit-btn"
+                type="button"
+                onClick={() => startEditList(activeList)}
+                aria-label="Liste umbenennen"
+              >
+                Umbenennen
+              </button>
+              <button
+                className="app__delete"
+                type="button"
+                onClick={() => deleteList(activeList.id)}
+                disabled={lists.length <= 1}
+                aria-label="Liste löschen"
+              >
+                Löschen
+              </button>
+            </>
+          ))}
         <form className="app__list-form" onSubmit={handleCreateList}>
           <input
             className="app__input"
@@ -229,62 +317,67 @@ export default function App({ repository = defaultRepository }) {
       {ready && openItems.length === 0 ? (
         <p className="app__empty">Deine Liste ist leer.</p>
       ) : (
-        <ul className="app__list">
-          {openItems.map((item) => (
-            <li key={item.id} className="app__item">
-              {editingId === item.id ? (
-                <form className="app__edit" onSubmit={handleRenameSubmit}>
-                  <input
-                    className="app__input"
-                    type="text"
-                    value={editDraft}
-                    onChange={(event) => setEditDraft(event.target.value)}
-                    aria-label="Item-Name bearbeiten"
-                    autoFocus
-                  />
-                  <button className="app__save" type="submit">
-                    Speichern
-                  </button>
-                  <button
-                    className="app__cancel"
-                    type="button"
-                    onClick={cancelEdit}
-                  >
-                    Abbrechen
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <label className="app__item-label">
-                    <input
-                      className="app__check"
-                      type="checkbox"
-                      checked={false}
-                      onChange={() => archiveItem(item.id)}
-                    />
-                    <span className="app__item-name">{item.name}</span>
-                  </label>
-                  <button
-                    className="app__edit-btn"
-                    type="button"
-                    onClick={() => startEdit(item)}
-                    aria-label={`${item.name} bearbeiten`}
-                  >
-                    Bearbeiten
-                  </button>
-                  <button
-                    className="app__delete"
-                    type="button"
-                    onClick={() => archiveItem(item.id)}
-                    aria-label={`${item.name} entfernen`}
-                  >
-                    Entfernen
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+        groupByCategory(openItems).map(([category, groupItems]) => (
+          <section className="app__category" key={category}>
+            <h2 className="app__category-heading">{category}</h2>
+            <ul className="app__list">
+              {groupItems.map((item) => (
+                <li key={item.id} className="app__item">
+                  {editingId === item.id ? (
+                    <form className="app__edit" onSubmit={handleRenameSubmit}>
+                      <input
+                        className="app__input"
+                        type="text"
+                        value={editDraft}
+                        onChange={(event) => setEditDraft(event.target.value)}
+                        aria-label="Item-Name bearbeiten"
+                        autoFocus
+                      />
+                      <button className="app__save" type="submit">
+                        Speichern
+                      </button>
+                      <button
+                        className="app__cancel"
+                        type="button"
+                        onClick={cancelEdit}
+                      >
+                        Abbrechen
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <label className="app__item-label">
+                        <input
+                          className="app__check"
+                          type="checkbox"
+                          checked={false}
+                          onChange={() => archiveItem(item.id)}
+                        />
+                        <span className="app__item-name">{item.name}</span>
+                      </label>
+                      <button
+                        className="app__edit-btn"
+                        type="button"
+                        onClick={() => startEdit(item)}
+                        aria-label={`${item.name} bearbeiten`}
+                      >
+                        Bearbeiten
+                      </button>
+                      <button
+                        className="app__delete"
+                        type="button"
+                        onClick={() => archiveItem(item.id)}
+                        aria-label={`${item.name} entfernen`}
+                      >
+                        Entfernen
+                      </button>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
 
       {recentlyUsedItems.length > 0 && (
