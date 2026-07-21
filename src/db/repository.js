@@ -184,8 +184,8 @@ export function createRepository(db = defaultDb) {
       .where('listId')
       .equals(record.listId)
       .filter((entry) => entry.done !== true && entry.name === record.name)
-      .count()
-    if (duplicateOpen > 0) return toItem(record)
+      .first()
+    if (duplicateOpen) return toItem(record)
 
     const updatedAt = now()
     await db.items.where('id').equals(id).modify({ done: false, updatedAt })
