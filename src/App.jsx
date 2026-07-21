@@ -33,6 +33,8 @@ export default function App({ repository = defaultRepository }) {
   const [listDraft, setListDraft] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState('')
+  const [editingListId, setEditingListId] = useState(null)
+  const [editListDraft, setEditListDraft] = useState('')
   // Hat der Nutzer die aktive Liste bereits selbst gewechselt/angelegt, bevor
   // der (asynchrone) Bootstrap-Load aufgelöst hat, ist dessen Ergebnis für
   // Aktiv-Liste + Items veraltet — es darf die Nutzeraktion dann nicht mehr
@@ -161,6 +163,48 @@ export default function App({ repository = defaultRepository }) {
     setEditDraft('')
   }
 
+  function startEditList(list) {
+    setEditingListId(list.id)
+    setEditListDraft(list.name)
+  }
+
+  function cancelEditList() {
+    setEditingListId(null)
+    setEditListDraft('')
+  }
+
+  async function handleRenameListSubmit(event) {
+    event.preventDefault()
+    const name = editListDraft.trim()
+    if (!name) {
+      cancelEditList()
+      return
+    }
+    await repository.renameList(editingListId, name)
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id === editingListId ? { ...list, name } : list,
+      ),
+    )
+    setEditingListId(null)
+    setEditListDraft('')
+  }
+
+  // Guard (letzte Liste bleibt): UI verhindert den Löschversuch bereits hier,
+  // bevor er das Repository erreicht.
+  async function deleteList(id) {
+    if (lists.length <= 1) return
+    userSwitchedListRef.current = true
+    const newActiveId = await repository.removeList(id)
+    setLists((prev) => prev.filter((list) => list.id !== id))
+    if (editingListId === id) cancelEditList()
+    if (newActiveId !== activeListId) {
+      applyActiveList(newActiveId, await repository.loadItems(newActiveId))
+    }
+  }
+
+  const activeList = lists.find((list) => list.id === activeListId)
+
   return (
     <main className="app">
       <header className="app__header">
@@ -180,6 +224,49 @@ export default function App({ repository = defaultRepository }) {
             </option>
           ))}
         </select>
+        {activeList &&
+          (editingListId === activeList.id ? (
+            <form className="app__edit" onSubmit={handleRenameListSubmit}>
+              <input
+                className="app__input"
+                type="text"
+                value={editListDraft}
+                onChange={(event) => setEditListDraft(event.target.value)}
+                aria-label="Listenname bearbeiten"
+                autoFocus
+              />
+              <button className="app__save" type="submit">
+                Speichern
+              </button>
+              <button
+                className="app__cancel"
+                type="button"
+                onClick={cancelEditList}
+              >
+                Abbrechen
+              </button>
+            </form>
+          ) : (
+            <>
+              <button
+                className="app__edit-btn"
+                type="button"
+                onClick={() => startEditList(activeList)}
+                aria-label="Liste umbenennen"
+              >
+                Umbenennen
+              </button>
+              <button
+                className="app__delete"
+                type="button"
+                onClick={() => deleteList(activeList.id)}
+                disabled={lists.length <= 1}
+                aria-label="Liste löschen"
+              >
+                Löschen
+              </button>
+            </>
+          ))}
         <form className="app__list-form" onSubmit={handleCreateList}>
           <input
             className="app__input"
