@@ -13,7 +13,6 @@ Die Fabrik besteht aus drei Teilen — zwei im Repo (versioniert), einer in der 
 | `factory-run` | `.claude/commands/factory-run.md` | Vorab-Gate + Start **einer** Slice |
 | Nachschub-Automatik | `.github/workflows/unblock-ready.yml` | hebt abhängige Issues nach Merge auf `status:ready` |
 | Cron-Routine | Cloud (`/schedule`) | feuert `factory-run` alle 6 h |
-| Review-Routine | Cloud | triggert Ultrareview auf neue Fabrik-PRs |
 
 **Loop-Modell:** Der Durchsatz entsteht **nicht** durch eine Schleife in einer Session,
 sondern durch **wiederholtes Cron-Feuern** (aktuell **alle 6 h** = eine eigene, kurze Session
@@ -42,16 +41,26 @@ Takt wieder verdichtet werden.
 
 ## Review-Zyklus
 
-- **Auto-fix läuft schon** (nativ, aktiviert in `/implement-next`): reagiert auf
-  Review-Kommentare + CI-Failures, pusht Fixes, antwortet, resolved.
-- **Reviewer = Ultrareview, MANUELL durch Vincent beim Merge** (`/code-review ultra <PR>`,
-  Pro-Quota-Topf, keine $-API-Kosten). Kein Self-Review.
+- **Review = in-Session pro Slice** (aktiviert in `/implement-next`): direkt nach Grün und
+  **vor** dem PR läuft `mattpocock-skills:code-review` mit Fixpunkt `main` — zwei isolierte
+  Sub-Agenten (Standards + Spec), Sub-Agenten wo möglich auf Sonnet, reine Quota-Kosten.
+  Anschließend der **Fix-Pass**: jede Finding gegen den Code verifizieren, nur gültige minimal
+  fixen, den Rest mit Kurzbegründung überspringen, Gates erneut grün. Der Report hängt als
+  **ein** konsolidierter Audit-Kommentar am PR. Das läuft **in derselben Session**, die den
+  Slice baut — kein Cross-Session-Backlog, kein Marker. Dieser Schritt **ersetzt** den
+  früheren `/simplify`-Cleanup-Pass.
+- **Auto-fix läuft danach** (nativ, aktiviert in `/implement-next`): reagiert auf später
+  eintreffendes **externes** Feedback (CI-Failures + Vincents Review-Kommentare), pusht Fixes,
+  antwortet, resolved. Reihenfolge bindend — erst Fix-Pass, dann Monitor, sonst behandelt der
+  Monitor den eigenen Audit-Kommentar als Aufgabe.
+- **Manueller Ultrareview beim Merge bleibt optional:** Vincent kann beim Merge zusätzlich
+  `/code-review ultra <PR>` fahren (Pro-Quota-Topf, keine $-API-Kosten) — als tiefere
+  zweite Meinung, nicht mehr als einziger Reviewer.
 - ❌ **Getestet & verworfen (2026-07-20): Cron-getriggerte Ultrareview geht NICHT.** Eine
   Cloud-/Routine-Session kann `/code-review ultra` nicht ausführen — das Command ist dort
-  nicht verfügbar und bietet nur einen lokalen Fallback an. Eine dedizierte Review-Routine
-  wurde daher wieder deaktiviert. Automatisierter, unabhängiger Reviewer bleibt offen;
-  Kandidaten: **GitHub Copilot Review** (~$10/mo flat, kein Quota, voll automatisch) oder
-  eine **Claude-Action auf PR-Event** (API-Key → $-Kosten). Bis dahin: manuell beim Merge.
+  nicht verfügbar und bietet nur einen lokalen Fallback an. Genau deshalb ist der portable
+  Reviewer jetzt der In-Session-`code-review`-Skill (läuft in der Cron-Session, nur Quota),
+  nicht eine separate Review-Routine.
 
 ## Kalibrierung (empirisch nachziehen)
 
@@ -85,7 +94,8 @@ Takt wieder verdichtet werden.
 - [ ] **Cron-Routine** via `/schedule`: alle 6 h, Prompt = `/factory-run`. Ersetzt den alten
       Routine-Prompt, der bei jedem offenen PR abbrach. (Takt bewusst konservativ, s. „Warum 6 h".)
 - [x] ~~Review-Routine für `/code-review ultra`~~ — **verworfen**: Cron kann Ultrareview
-      nicht auslösen (s. Review-Zyklus). Review bleibt vorerst manuell beim Merge.
+      nicht auslösen (s. Review-Zyklus). Review läuft jetzt **in-Session pro Slice** über
+      `mattpocock-skills:code-review` in `/implement-next` — keine Cloud-Routine nötig.
 - [ ] **Secret `SNAPSHOT_PUSH_TOKEN`** anlegen (Fine-grained PAT, Contents: Read/Write) —
       damit der „Update visual snapshots"-Workflow pushen kann und die CI erneut triggert.
 - [ ] Nach den ersten Nächten: Verbrauch messen und Cron-Takt / PR-Cap kalibrieren.
