@@ -75,6 +75,40 @@ deckt dieselben Smells ab, der Fix-Pass wendet sie an. Ein Mechanismus statt zwe
   mehrere Kommentare) — für Vincents Morgen-Review nachvollziehbar: je Finding **gefixt**
   (was?) oder **bewusst übersprungen** (Kurzbegründung).
 
+## Architektur-Scan (nach dem PR, issue-only)
+
+Ist der PR offen, läuft ein Architektur-Scan über den Slice — **rein issue-generierend, nie
+selbst-umsetzend.** Klare Trennlinie zum Review→Fix-Pass: dessen Findings betreffen den **Diff**
+(in scope → in-Session gefixt); Architektur-Findings betreffen die **Struktur** (out of scope →
+neues Issue). Ein Deepening im Slice-PR umzusetzen würde CLAUDE.mds Kernregel „Scope-Creep:
+STOPP → Backlog-Issue" und Never-auto-merge brechen.
+
+- **Delegiere an einen `Explore`-Sub-Agenten auf Sonnet** (nicht am Hauptmodell hängen lassen —
+  Quota, Kernprinzip 8).
+- **Nur Schritt 1 („Explore") von `mattpocock-skills:improve-codebase-architecture`** —
+  **ohne** dessen HTML-Report (Schritt 2) und **ohne** Grilling-Loop (Schritt 3), die sind
+  human-in-the-loop und nicht AFK-tauglich. Vokabular aus `mattpocock-skills:codebase-design`
+  exakt nutzen: shallow → deep Modul, **Seam**, **Deletion-Test**, **Locality**, **Leverage**.
+- **Scope = nur die im Slice geänderten Dateien** (`git diff --name-only main...HEAD`) — Pococks
+  Skill gewichtet selbst kürzlich geänderte Hot-Spots. Keine repetitiven Full-Repo-Scans.
+- Suche Deepening-Gelegenheiten: shallow Module (Interface fast so komplex wie Implementierung),
+  fehlende Locality (nur für Testbarkeit extrahierte Funktionen, während die echten Bugs im
+  Aufruf stecken), über Seams leckende Kopplung, schwer testbare Interfaces. **Deletion-Test**
+  auf Verdächtiges anwenden: würde Löschen die Komplexität konzentrieren (gut) oder nur
+  verschieben?
+
+### Jede Gelegenheit → Dedup → `triage`-Issue
+
+- **Dedup gegen offene Issues zuerst** (`gh issue list --state open`). Existiert bereits ein
+  offenes Issue, das das Finding abdeckt → **kein Duplikat** anlegen (höchstens ein
+  referenzierender Kommentar). Sonst ein **neues Issue**.
+- Neue Issues bekommen **ausschließlich `triage`** (KI-erstellt, wartet auf menschliche
+  Triage) — **nie automatisch `status:ready`**, konform zu CLAUDE.md für autonom erstellte
+  Issues. Prio- und Feinlabels vergibt Vincent bei der Triage.
+- **Findings werden nie im Slice-PR selbst umgesetzt** — nur als Issue festhalten.
+- **Kein Finding / alles bereits als Issue erfasst → still enden.** Kein Leer-Issue, kein
+  Kommentar um des Kommentars willen.
+
 ## Nach dem PR
 
 - **Aktiviere sofort das PR-Monitoring (Auto-fix / `subscribe_pr_activity`) — nicht fragen,
@@ -96,3 +130,6 @@ deckt dieselben Smells ab, der Fix-Pass wendet sie an. Ein Mechanismus statt zwe
   Achse (Standards/Spec), wie viele als gültig gefixt, wie viele mit Begründung übersprungen —
   und dass der konsolidierte Audit-Kommentar am PR hängt. Solange der Pass neu ist, ist das
   der einzige Weg zu sehen, ob er Nutzen bringt oder nur Quota kostet.
+- Nenne ebenso **das Ergebnis des Architektur-Scans**: wie viele Deepening-Gelegenheiten
+  gefunden, wie viele als neues `triage`-Issue angelegt (mit Nummern), wie viele als Duplikat
+  offener Issues übersprungen — oder dass der Scan still endete.
