@@ -28,6 +28,14 @@ Diese Datei wird bei jeder lokalen **und** Cloud-Session geladen und ist bindend
   2. Review-Iteration). **Interaktiv gemeinsam mit Vincent** erstellte Issues (z.B. via
   `/to-issues`) werden dagegen direkt korrekt gelabelt: unblockt → `status:ready`,
   blockiert → `status:blocked`.
+- **Blocker-Ketten: die Wurzel ist NIE `status:blocked`.** Legst du mehrere aufeinander
+  aufbauende Issues an (z.B. Design-Slices A → B → C), gilt die Label-Regel pro Issue: das
+  Wurzel-Issue hat keine `#N`-Blocker („## Blocked by: Keine") und bekommt deshalb
+  `status:ready` (bzw. `triage` bei autonomer Anlage) — **nicht** `status:blocked`. Nur
+  Issues mit mindestens einem offenen `#N`-Blocker sind `status:blocked`. Wird die ganze
+  Kette pauschal blockiert gelabelt, verhungert die Fabrik (kein ready-Issue → siehe #100).
+  Als Sicherheitsnetz hebt `.github/workflows/unblock-ready.yml` ein `status:blocked`-Issue,
+  dessen „## Blocked by" keine `#N`-Referenz enthält, automatisch auf `status:ready`.
 
 ## Vertikale Slices
 
