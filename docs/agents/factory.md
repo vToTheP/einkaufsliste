@@ -49,6 +49,17 @@ Takt wieder verdichtet werden.
   **ein** konsolidierter Audit-Kommentar am PR. Das läuft **in derselben Session**, die den
   Slice baut — kein Cross-Session-Backlog, kein Marker. Dieser Schritt **ersetzt** den
   früheren `/simplify`-Cleanup-Pass.
+- **Architektur-Scan pro Slice** (aktiviert in `/implement-next`): nach dem PR läuft ein
+  `Explore`-Sub-Agent (Sonnet) über die **im Slice geänderten Dateien** — der Explore-Kern von
+  `mattpocock-skills:improve-codebase-architecture`, **ohne** dessen HTML-Report und
+  Grilling-Loop (human-in-the-loop, nicht AFK-tauglich). Er sucht Deepening-Gelegenheiten
+  (shallow → deep Modul, Seam, Deletion-Test). **Issue-only, nie selbst-umsetzend:** klare
+  Trennlinie — `code-review`-Findings betreffen den **Diff** (in scope → in-Session gefixt),
+  Architektur-Findings betreffen die **Struktur** (out of scope → neues Issue). Jede
+  Gelegenheit wird gegen offene Issues **dedupliziert** und sonst als neues **`triage`**-Issue
+  angelegt (nie automatisch `status:ready` — konform zu CLAUDE.md für autonom erstellte
+  Issues). Kein Finding → still, kein Leer-Issue. So bleibt Never-auto-merge und die
+  „Scope-Creep: STOPP → Backlog-Issue"-Kernregel gewahrt.
 - **Auto-fix läuft danach** (nativ, aktiviert in `/implement-next`): reagiert auf später
   eintreffendes **externes** Feedback (CI-Failures + Vincents Review-Kommentare), pusht Fixes,
   antwortet, resolved. Reihenfolge bindend — erst Fix-Pass, dann Monitor, sonst behandelt der
