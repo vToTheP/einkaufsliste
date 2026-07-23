@@ -53,8 +53,10 @@ Grund kurz und **beende die Session ohne Slice** (kein Issue anfangen, keinen PR
 
 ## Feste Regeln
 
-- **Never-auto-merge:** Die Fabrik öffnet nur PRs und merged **nie**. Das Mergen bleibt bei
-  Vincent.
+- **Merge-Policy:** Die Fabrik öffnet nur PRs und merged **nie autonom** — das Mergen bleibt
+  (Stand jetzt) komplett bei Vincent. Welche PRs Fast-Merge vs. genaue Prüfung sind, regeln die
+  **Risiko-Tiers** in `CLAUDE.md` (Reversibilität × CI-Blindheit), nicht die alte
+  Kategorie-Liste.
 - **Ein PR pro Lauf.** Auch wenn Zeit bliebe — mehr Durchsatz kommt über die nächste
   Cron-Feuerung, nicht über einen Loop in dieser Session.
 - Es gelten zusätzlich alle Regeln aus `CLAUDE.md` und `/implement-next`.

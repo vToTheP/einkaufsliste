@@ -245,8 +245,9 @@ ist hier legitim und gehört in genau die Slice, die Dexie einführt.
   + Gruppierung, (d) „Zuletzt verwendet". `/to-issues` schneidet diese als einzelne vertikale
   Slices (Eingabe → State → Persistenz → Anzeige), jede ≤ ~200 Zeilen Richtwert.
 - **Dependency-Hinweis:** Das Einführen von Dexie ist eine bewusste Dependency-Änderung und
-  fällt unter „Never-auto-merge" (CLAUDE.md) — der PR, der Dexie hinzufügt, braucht manuellen
-  Review/Merge durch Vincent.
+  fällt unter Tier HUMAN der Merge-Policy (CLAUDE.md; früher „Never-auto-merge") — als
+  Runtime-Dependency, die zudem `src/db/**` berührt, braucht der PR manuellen Review/Merge
+  durch Vincent.
 - **iOS-Kontext:** Die installierte Homescreen-PWA (steht seit MVP-Slice 5) ist faktisch von
   der Safari-7-Tage-Storage-Löschung ausgenommen — die Persistenz-Annahme dieses PRD hält für
   die Zielplattform. Im reinen Safari-Tab gilt die Ausnahme nicht (bekannte, akzeptierte

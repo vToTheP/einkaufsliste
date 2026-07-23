@@ -49,8 +49,10 @@ gebaut und genau angeschaut. Alle weiteren Slices laufen autonom durch die Fabri
 ## Leitplanken (aus dem Handoff)
 
 - Kleine PRs (≤ 200 Zeilen), hartes CI-Gate (Tests grün = Pflicht zum Merge).
-- **Never-auto-merge-Liste:** Dependency-Updates, CI-/Build-Config-Änderungen, alles was Deploy
-  betrifft → immer manuell durch Vincent.
+- **Merge-Policy nach Risiko-Tiers** (Reversibilität × CI-Blindheit, siehe `CLAUDE.md`): CI-blinde
+  oder schwer reversible Änderungen (Workflows/CI-Config, Deploy, `src/db/**`-Schema,
+  `src/pwa/**`-Service-Worker, Dependency-Majors) → Tier HUMAN, immer manuell durch Vincent; der
+  Rest ist bei grüner CI Fast-Merge. Aktuell merged Vincent weiterhin alles von Hand.
 - Bei Sackgassen/Mehrdeutigkeit: Agent fragt nach statt zu raten.
 - Review ≠ Self-Review: Ultrareview oder Copilot reviewt, Auto-fix bügelt CI/Kommentare,
   Vincent merged vom iPhone.
