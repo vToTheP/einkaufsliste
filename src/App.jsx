@@ -5,6 +5,7 @@ import {
   DEFAULT_LIST_ID,
 } from './db/repository.js'
 import { groupByCategory } from './categories.js'
+import { PlusIcon, EditIcon, DeleteIcon } from './icons/index.jsx'
 
 // Führt den initialen Persistenz-Load mit dem aktuellen UI-State zusammen, ohne
 // bereits getätigte User-Aktionen zu überschreiben: Löst der Load (z.B. auf
@@ -272,7 +273,7 @@ export default function App({ repository = defaultRepository }) {
                 onClick={() => startEditList(activeList)}
                 aria-label="Liste umbenennen"
               >
-                Umbenennen
+                <EditIcon />
               </button>
               <button
                 className="app__delete"
@@ -281,7 +282,7 @@ export default function App({ repository = defaultRepository }) {
                 disabled={lists.length <= 1}
                 aria-label="Liste löschen"
               >
-                Löschen
+                <DeleteIcon />
               </button>
             </>
           ))}
@@ -294,8 +295,12 @@ export default function App({ repository = defaultRepository }) {
             placeholder="Neue Liste"
             aria-label="Neue Liste"
           />
-          <button className="app__add-list" type="submit">
-            Liste anlegen
+          <button
+            className="app__add-list"
+            type="submit"
+            aria-label="Liste anlegen"
+          >
+            <PlusIcon />
           </button>
         </form>
       </header>
@@ -309,8 +314,8 @@ export default function App({ repository = defaultRepository }) {
           placeholder="Was brauchst du?"
           aria-label="Neues Item"
         />
-        <button className="app__add" type="submit">
-          Hinzufügen
+        <button className="app__add" type="submit" aria-label="Hinzufügen">
+          <PlusIcon />
         </button>
       </form>
 
@@ -361,7 +366,7 @@ export default function App({ repository = defaultRepository }) {
                         onClick={() => startEdit(item)}
                         aria-label={`${item.name} bearbeiten`}
                       >
-                        Bearbeiten
+                        <EditIcon />
                       </button>
                       <button
                         className="app__delete"
@@ -369,7 +374,7 @@ export default function App({ repository = defaultRepository }) {
                         onClick={() => archiveItem(item.id)}
                         aria-label={`${item.name} entfernen`}
                       >
-                        Entfernen
+                        <DeleteIcon />
                       </button>
                     </>
                   )}

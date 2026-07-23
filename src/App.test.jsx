@@ -473,4 +473,57 @@ describe('App – Kategorien', () => {
       screen.queryByRole('checkbox', { name: 'Hafermilch' }),
     ).not.toBeInTheDocument()
   })
+
+  // Issue #96: unmissverständliche Aktionen (Hinzufügen/Bearbeiten/Entfernen,
+  // Listen-Anlegen/Umbenennen/Löschen) werden zu Icon-Buttons; das aria-label
+  // bleibt unverändert, deshalb finden alle obigen getByRole(...)-Aufrufe sie
+  // weiterhin unter demselben Namen.
+  it('zeigt Icon-Buttons für Hinzufügen, Bearbeiten und Entfernen', async () => {
+    renderApp()
+    await addItem('Milch')
+
+    expect(
+      screen.getByRole('button', { name: 'Hinzufügen' }).querySelector('svg'),
+    ).toBeInTheDocument()
+    expect(
+      screen
+        .getByRole('button', { name: 'Milch bearbeiten' })
+        .querySelector('svg'),
+    ).toBeInTheDocument()
+    expect(
+      screen
+        .getByRole('button', { name: 'Milch entfernen' })
+        .querySelector('svg'),
+    ).toBeInTheDocument()
+  })
+
+  it('zeigt Icon-Buttons für Listen-Aktionen (Anlegen/Umbenennen/Löschen)', async () => {
+    renderApp()
+    await screen.findByRole('option', { name: 'Einkaufsliste' })
+
+    expect(
+      screen.getByRole('button', { name: 'Liste anlegen' }).querySelector('svg'),
+    ).toBeInTheDocument()
+    expect(
+      screen
+        .getByRole('button', { name: 'Liste umbenennen' })
+        .querySelector('svg'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Liste löschen' }).querySelector('svg'),
+    ).toBeInTheDocument()
+  })
+
+  it('behält Text bei mehrdeutigen Aktionen in „Zuletzt verwendet"', async () => {
+    renderApp()
+    await addItem('Milch')
+    fireEvent.click(screen.getByRole('button', { name: 'Milch entfernen' }))
+
+    expect(
+      await screen.findByRole('button', { name: 'Milch reaktivieren' }),
+    ).toHaveTextContent('Reaktivieren')
+    expect(
+      screen.getByRole('button', { name: 'Milch endgültig entfernen' }),
+    ).toHaveTextContent('Endgültig entfernen')
+  })
 })
