@@ -1,13 +1,18 @@
 name: Unblock ready issues
 
-# Wenn ein Issue geschlossen wird (u.a. durch einen gemergten PR mit "Closes #N"),
-# alle davon abhängigen Issues von status:blocked auf status:ready heben — aber nur,
-# sobald ALLE ihre Blocker geschlossen sind. So verhungert die Nacht-Fabrik nicht
-# nach einer einzigen Slice (Baustein 3 aus #53: Nachschub-Automatik).
+# Hebt status:blocked-Issues auf status:ready, sobald sie tatsächlich frei sind:
+#   1. Ein Issue wird geschlossen (u.a. gemergter PR mit "Closes #N") → alle davon
+#      abhängigen Issues freischalten, sobald ALLE ihre Blocker geschlossen sind.
+#   2. Ein Issue wird angelegt/neu gelabelt → falls sein "## Blocked by"-Abschnitt
+#      explizit KEINE #N-Referenz enthält (z.B. "Keine"), wurde es fälschlich als
+#      status:blocked angelegt und wird direkt auf status:ready gehoben. Ohne den
+#      opened/labeled-Trigger würde bei null ready-Issues nie ein closed-Event
+#      feuern → die Nacht-Fabrik bliebe im Deadlock (siehe #100).
+# So verhungert die Nacht-Fabrik nicht (Baustein 3 aus #53: Nachschub-Automatik).
 
 on:
   issues:
-    types: [closed]
+    types: [closed, opened, labeled]
 
 permissions:
   issues: write
@@ -40,12 +45,25 @@ jobs:
             # Blocker-Nummern aus dem "## Blocked by"-Abschnitt lesen: alle "#<zahl>"-
             # Referenzen zwischen der Überschrift und der nächsten "##"-Überschrift.
             body=$(echo "$issue" | jq -r '.body // ""')
-            blockers=$(printf '%s\n' "$body" \
-              | awk 'tolower($0) ~ /^##+[[:space:]]*blocked by/ {f=1; next} /^##/ {f=0} f' \
+            section=$(printf '%s\n' "$body" \
+              | awk 'tolower($0) ~ /^##+[[:space:]]*blocked by/ {f=1; next} /^##/ {f=0} f')
+            has_section=$(printf '%s\n' "$body" \
+              | awk 'tolower($0) ~ /^##+[[:space:]]*blocked by/ {print "yes"; exit}')
+            blockers=$(printf '%s\n' "$section" \
               | grep -oE '#[0-9]+' | tr -d '#' | sort -u || true)
 
             if [ -z "$blockers" ]; then
-              echo "#$num: kein '## Blocked by'-Abschnitt mit Referenzen → übersprungen."
+              # Kein "## Blocked by"-Abschnitt → ohne belastbare Info im Zweifel
+              # blockiert lassen. Abschnitt vorhanden, aber ohne #N-Referenz
+              # (z.B. "Keine") → das Issue wurde fälschlich blockiert angelegt
+              # und wird aktiv freigeschaltet (#100).
+              if [ -n "$has_section" ]; then
+                echo "#$num: '## Blocked by' ohne #N-Referenz → fälschlich blockiert, status:ready."
+                gh issue edit "$num" --repo "$REPO" \
+                  --remove-label status:blocked --add-label status:ready
+              else
+                echo "#$num: kein '## Blocked by'-Abschnitt → übersprungen (bleibt status:blocked)."
+              fi
               continue
             fi
 
