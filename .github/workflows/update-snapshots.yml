@@ -36,6 +36,12 @@ jobs:
           # Fällt auf GITHUB_TOKEN zurück, falls das Secret (noch) fehlt.
           token: ${{ secrets.SNAPSHOT_PUSH_TOKEN || github.token }}
       - run: npm ci
+      # Wie im e2e-Job von ci.yml: die zur installierten @playwright/test-Version
+      # passende Chromium-Revision nachziehen. Ohne diesen Schritt schlägt der
+      # Browser-Start nach einem Playwright-Bump fehl ("Executable doesn't exist"),
+      # weil die im Image vorinstallierte Revision veraltet — dann werden nie
+      # Baselines erzeugt und der e2e-Check des Ziel-Branch bleibt rot.
+      - run: npx playwright install chromium
       - run: npm run build
       # --update-snapshots schreibt die neuen Baselines und beendet grün.
       - run: npm run test:e2e -- --update-snapshots
