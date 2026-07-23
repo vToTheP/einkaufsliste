@@ -1,12 +1,74 @@
-:root {
-  --color-accent: #16a34a;
-  --color-bg: #ffffff;
-  --color-text: #1f2937;
-  --color-muted: #6b7280;
+/*
+ * Semantische Design-Token-Ebene (Issue #95, ADR 0001).
+ * Dies ist die EINZIGE Stelle mit Rohfarben — Komponenten (App.css) referenzieren
+ * ausschließlich semantische Tokens. Erd-Palette (Coolors):
+ *   Olive #606c38 · Dunkelgrün #283618 · Creme #fefae0 · Sand #dda15e · Rost #bc6c25
+ * Warm-harmonisierte Semantik statt Standard-Rot/Grün: Danger = Koralle-Rost,
+ * Success = Grün aus dem Oliv-Ende. Light + Dark, Kontrast WCAG-geprüft
+ * (src/design-tokens.test.js).
+ */
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: var(--color-text);
-  background-color: var(--color-bg);
+:root {
+  color-scheme: light dark;
+
+  /* Farbe — Light (Creme-Grund, Oliv-Akzent) */
+  --surface: #fefae0;
+  --surface-raised: #fffdf2;
+  --text: #283618;
+  --text-muted: #55603a;
+  --border: #e4dcbf;
+  --accent: #606c38;
+  --on-accent: #fefae0;
+  --danger: #b23a26;
+  --danger-border: #e7b0a4;
+  --success: #3f6d24;
+
+  /* Abstände */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Radien */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Typografie */
+  --font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text);
+  background-color: var(--surface);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Farbe — Dark (dunkles Grün-Grund, aufgehellter Oliv-Akzent) */
+    --surface: #1b2110;
+    --surface-raised: #29331a;
+    --text: #f2ecd2;
+    --text-muted: #aab48c;
+    --border: #3f4d29;
+    --accent: #9aa869;
+    --on-accent: #1b2110;
+    --danger: #ff8a72;
+    --danger-border: #6e392c;
+    --success: #9ccf6e;
+  }
 }
 
 * {
