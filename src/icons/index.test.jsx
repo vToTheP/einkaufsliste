@@ -9,8 +9,6 @@ import {
   RestoreIcon,
 } from './index.jsx'
 
-// Issue #96: inline SVG-Set, offline-sicher, theme-fähig über currentColor,
-// dekorativ (Bedeutung trägt das umgebende <button aria-label>, nicht das Icon).
 const ICONS = { MenuIcon, PlusIcon, EditIcon, DeleteIcon, BackIcon, RestoreIcon }
 
 describe('Icon-Set', () => {
