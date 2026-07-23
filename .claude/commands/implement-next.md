@@ -81,7 +81,7 @@ Ist der PR offen, läuft ein Architektur-Scan über den Slice — **rein issue-g
 selbst-umsetzend.** Klare Trennlinie zum Review→Fix-Pass: dessen Findings betreffen den **Diff**
 (in scope → in-Session gefixt); Architektur-Findings betreffen die **Struktur** (out of scope →
 neues Issue). Ein Deepening im Slice-PR umzusetzen würde CLAUDE.mds Kernregel „Scope-Creep:
-STOPP → Backlog-Issue" und Never-auto-merge brechen.
+STOPP → Backlog-Issue" und die Merge-Policy brechen.
 
 - **Delegiere an einen `Explore`-Sub-Agenten auf Sonnet** (nicht am Hauptmodell hängen lassen —
   Quota, Kernprinzip 8).

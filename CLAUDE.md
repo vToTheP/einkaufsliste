@@ -57,10 +57,38 @@ keine horizontale Schicht.
     zu treffen. Qualität gewinnt immer.
 - Jeder PR referenziert sein Issue: `Closes #N`.
 
-## Never-auto-merge
+## Merge-Policy (Risiko-Tiers)
 
-Dependency-Updates, CI-/Build-Config, Deploy-Änderungen → immer manueller Review + Merge
-durch Vincent (nie autonom mergen).
+Gate ist **nicht** die Datei-Kategorie, sondern **Reversibilität × CI-Blindheit**: Eine
+Änderung braucht menschlichen Merge, wenn die automatische CI ihren Fehlermodus **nicht fangen**
+kann **oder** sie für bereits ausgelieferte User **schwer reversibel** ist. Alles andere fließt
+bei grüner CI. **Die Achse ist Blast-Radius/Reversibilität, nicht der Ordner** — die Pfad-Liste
+unten ist nur die mechanisch prüfbare Ausprägung davon; ein neuer irreversibler Fehlermodus
+wird zu Tier HUMAN *hinzugefügt*, nicht in eine Kategorie gezwängt.
+
+**Wichtig — heute noch 100 % manuell:** Es gibt (Stand jetzt) **keine** Auto-Merge-Automatik;
+die Fabrik öffnet nur PRs, **Vincent merged jeden PR von Hand**. Die Tiers steuern vorerst nur
+die **Prüf-Tiefe** (Fast-Merge vs. genau hinschauen) und labeln PRs für den Tag, an dem
+Tier SAFE echte Auto-Merge bekommt (siehe Follow-up-Issue „Auto-Merge für Tier SAFE
+verdrahten"). Zur Erinnerung: **jeder Merge nach `main` deployt automatisch nach Prod**
+(`deploy.yml`) — Merge = Ship, deshalb bleibt Tier SAFE bewusst eng, im Zweifel HUMAN.
+
+**Tier HUMAN — immer manueller Review + Merge durch Vincent** (mind. eine Bedingung wahr):
+- Ändert das **Sicherheitsnetz selbst**: `.github/workflows/**`, `eslint.config.js`,
+  `package.json`-Scripts/Build-Config. (Einen CI-schwächenden Change auto-zu-mergen entfernt
+  genau das Gate, auf das Auto-Merge vertraut.)
+- **Deploy / Secrets / Permissions**: `deploy.yml`, GitHub-Pages-Config, Tokens.
+- **CI-blinde, irreversible Fehlermodi**: Persistenz-Schema `src/db/**`, PWA-Service-Worker /
+  Caching `src/pwa/**` + der PWA-Block in `vite.config.js`. (CI sieht weder eine still
+  korrumpierte localStorage-Liste eines Users noch eine stale-gecachte installierte App.)
+- Dependency-**Major** (Runtime-Core-Bumps wie React/Vite ohnehin).
+
+**Tier SAFE — Fast-Merge bei grüner CI** (alles andere):
+- App-Slices in `src/**` (außer `src/db/**`, `src/pwa/**`), voll durch lint+test+build+e2e
+  abgedeckt — Regression von CI gefangen, Rollback = Revert-PR + Redeploy (ein Klick).
+- Docs- und reine Test-Änderungen.
+- Dependabot **patch/minor von Dev-Dependencies** (Cooldown ist in `dependabot.yml` bereits
+  erzwungen: major 14 / minor 5 / patch 3 Tage).
 
 ## Dev-Befehle
 

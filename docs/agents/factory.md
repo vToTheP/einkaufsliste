@@ -37,7 +37,9 @@ Takt wieder verdichtet werden.
 4. Sonst → `/implement-next` (nächstes `status:ready`-Issue nach Priorität, TDD, kleiner PR,
    Auto-fix-Monitoring). Kein Ready-Issue → sauberer Stopp.
 
-**Never-auto-merge bleibt:** Die Fabrik öffnet nur PRs und merged nie. Mergen bleibt bei Vincent.
+**Merge-Policy:** Die Fabrik öffnet nur PRs und merged nie autonom — Mergen bleibt (Stand jetzt)
+bei Vincent. Fast-Merge vs. genaue Prüfung regeln die **Risiko-Tiers** in `CLAUDE.md`
+(Reversibilität × CI-Blindheit).
 
 ## Review-Zyklus
 
@@ -58,7 +60,7 @@ Takt wieder verdichtet werden.
   Architektur-Findings betreffen die **Struktur** (out of scope → neues Issue). Jede
   Gelegenheit wird gegen offene Issues **dedupliziert** und sonst als neues **`triage`**-Issue
   angelegt (nie automatisch `status:ready` — konform zu CLAUDE.md für autonom erstellte
-  Issues). Kein Finding → still, kein Leer-Issue. So bleibt Never-auto-merge und die
+  Issues). Kein Finding → still, kein Leer-Issue. So bleiben die Merge-Policy und die
   „Scope-Creep: STOPP → Backlog-Issue"-Kernregel gewahrt.
 - **Auto-fix läuft danach** (nativ, aktiviert in `/implement-next`): reagiert auf später
   eintreffendes **externes** Feedback (CI-Failures + Vincents Review-Kommentare), pusht Fixes,
