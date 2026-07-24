@@ -50,6 +50,13 @@ docker run --rm -v "$PWD":/work -w /work \
 aktualisiert die Bilder lokal, erzeugt aber Rendering, das von der CI abweichen
 kann — für eingecheckte Referenzen daher immer den Container-Weg nutzen.
 
+**Bequemer für PRs:** Hänge das Label **`update-snapshots`** an den PR — der Workflow
+_Update visual snapshots_ regeneriert die Referenzen im selben Container, committet sie
+zurück auf den PR-Branch (löst die CI erneut aus) und nimmt das Label wieder ab. Die
+Fabrik setzt das Label bei sichtbaren UI-Änderungen automatisch beim Öffnen des PRs. Als
+Fallback (z.B. Branch ohne PR) lässt sich der Workflow weiterhin manuell starten:
+Actions → _Update visual snapshots_ → Branch angeben.
+
 ## Status
 
 **Live:** https://vtothep.github.io/einkaufsliste/ (Deploy bei jedem Merge auf `main`)

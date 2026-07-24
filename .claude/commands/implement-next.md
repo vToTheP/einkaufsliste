@@ -71,6 +71,13 @@ deckt dieselben Smells ab, der Fix-Pass wendet sie an. Ein Mechanismus statt zwe
 - Öffne einen **kleinen, fokussierten PR** gegen `main` (Richtwert ≤ 200 Zeilen) mit
   `Closes #<Nr>` im Body. Übernimm den Abschnitt „Nicht Teil dieser Slice" in die
   PR-Beschreibung.
+- **Sichtbare UI-Änderung? → Label `update-snapshots` an den PR hängen.** Ändert der Slice das
+  gerenderte Bild (Layout, Farben, neue/verschobene Elemente), brechen die visuellen
+  Playwright-Baselines und der `e2e`-Check wird rot. Setze dann direkt beim Öffnen das Label
+  `update-snapshots` — der gleichnamige Workflow regeneriert die Baselines im Container,
+  committet sie zurück (löst über `SNAPSHOT_PUSH_TOKEN` die CI erneut aus) und nimmt das Label
+  wieder ab. **Nur bei intendierten optischen Änderungen** — nicht pauschal an jeden PR, sonst
+  würde eine ungewollte visuelle Regression still mit einer neuen Baseline übertüncht.
 - **Hänge den Review-Report als EINEN konsolidierten Audit-Kommentar** an den PR (nicht als
   mehrere Kommentare) — für Vincents Morgen-Review nachvollziehbar: je Finding **gefixt**
   (was?) oder **bewusst übersprungen** (Kurzbegründung).
