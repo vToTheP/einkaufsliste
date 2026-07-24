@@ -4,7 +4,14 @@ name: Update visual snapshots
 # e2e-CI und committet sie zurück auf den Ziel-Branch. Nötig, weil intendierte
 # UI-Änderungen die Baselines brechen und diese nur im chromium-linux-Container
 # deterministisch erzeugbar sind (nicht lokal auf Windows / in der Cloud-Session).
-# Manuell auslösen: Actions → "Update visual snapshots" → Branch angeben.
+#
+# Zwei Auslöser:
+#   1. Label `update-snapshots` an einen PR hängen (Regelfall) — die Fabrik setzt
+#      es beim Öffnen eines PRs mit sichtbarer UI-Änderung automatisch. Der Ziel-
+#      Branch ist dann der PR-Head-Branch; nach erfolgreicher Regenerierung wird
+#      das Label wieder entfernt (das Signal ist verbraucht).
+#   2. Manuell: Actions → "Update visual snapshots" → Branch angeben (Fallback,
+#      z.B. für Branches ohne offenen PR).
 #
 # WICHTIG: Der Push nutzt das Secret SNAPSHOT_PUSH_TOKEN (Fine-grained PAT,
 # Contents: Read/Write). Ein Push mit dem Standard-GITHUB_TOKEN würde KEINE
@@ -18,20 +25,31 @@ on:
         description: "Branch, dessen visuelle Baselines aktualisiert werden sollen"
         required: true
         type: string
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update:
+    # Manueller Dispatch läuft immer; der Label-Pfad nur, wenn GENAU das
+    # `update-snapshots`-Label angehängt wurde (andere Labels triggern nichts).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'update-snapshots'
     runs-on: ubuntu-latest
     # Gleiches Image wie der e2e-Job in ci.yml → Baselines sind deterministisch.
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      # Ziel-Branch je Auslöser: Dispatch → Input, Label → PR-Head-Branch.
+      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.head_ref }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.head_ref }}
           # PAT bevorzugen, damit der spätere Push die CI erneut triggert.
           # Fällt auf GITHUB_TOKEN zurück, falls das Secret (noch) fehlt.
           token: ${{ secrets.SNAPSHOT_PUSH_TOKEN || github.token }}
@@ -64,9 +82,24 @@ jobs:
           fi
 
           git add e2e
-          git commit -m "test: visuelle Baselines aktualisiert (workflow_dispatch)"
-          git push origin "HEAD:${{ inputs.branch }}"
+          git commit -m "test: visuelle Baselines aktualisiert (${{ github.event_name }})"
+          git push origin "HEAD:$TARGET_BRANCH"
 
           if [ "$HAS_PAT" != "true" ]; then
             echo "::warning::Ohne SNAPSHOT_PUSH_TOKEN löst der Push keine CI aus — e2e des PR bitte manuell neu starten (Re-run) oder Secret anlegen."
           fi
+      # Nur im Label-Pfad: das verbrauchte Signal-Label wieder abnehmen, damit eine
+      # spätere erneute UI-Änderung es neu setzen und den Lauf erneut auslösen kann
+      # (`labeled` feuert nur beim Anhängen). Läuft nur, wenn die Regenerierung oben
+      # erfolgreich war — schlägt sie fehl, bleibt das Label als sichtbares Signal.
+      - name: Verbrauchtes update-snapshots-Label entfernen
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'update-snapshots',
+            })
