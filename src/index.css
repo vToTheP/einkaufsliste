@@ -22,6 +22,7 @@
   --danger: #b23a26;
   --danger-border: #e7b0a4;
   --success: #3f6d24;
+  --scrim: rgb(0 0 0 / 45%);
 
   /* Abstände */
   --space-1: 0.25rem;
