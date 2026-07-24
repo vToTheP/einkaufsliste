@@ -1,0 +1,45 @@
+name: Ready-Queue-Reminder
+
+# Warnt per ntfy, wenn die status:ready-Queue der Nacht-Fabrik zur Neige geht
+# (Baustein 3 aus #53, siehe #111) — sonst merkt Vincent das erst am Morgen
+# am ausbleibenden PR-Stapel, wenn factory-run.md mangels Issue nichts
+# findet. Eigener kleiner Cron statt Anhängsel an factory-run.md: läuft
+# unabhängig vom Agenten-Lauf, kostet kein LLM-Quota und ist per
+# workflow_dispatch isoliert testbar.
+#
+# Entscheidungslogik (Schwelle, Nachrichtentext) liegt getestet in
+# src/factory/readyQueueReminder.js — dieser Workflow ist nur die
+# Zähl-/Versand-Hülle darum (scripts/notify-ready-queue.mjs).
+
+on:
+  schedule:
+    - cron: '0 7 * * *' # täglich 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
+      READY_QUEUE_THRESHOLD: ${{ vars.READY_QUEUE_THRESHOLD }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+      - name: Ready-Queue zählen
+        id: count
+        run: |
+          set -euo pipefail
+          count=$(gh issue list --repo "$REPO" --state open \
+            --label status:ready --json number --jq 'length')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+      - name: Reminder auswerten und ggf. senden
+        run: node scripts/notify-ready-queue.mjs
+        env:
+          READY_QUEUE_COUNT: ${{ steps.count.outputs.count }}
