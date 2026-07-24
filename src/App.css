@@ -44,7 +44,10 @@
   align-items: flex-end;
   justify-content: center;
   background: var(--scrim);
-  z-index: 10;
+  /* Höher als .app__form (z-index: 10, #97) — sonst bleibt die fixe
+     Add-Leiste über dem Sheet sichtbar/bedienbar, während der Dialog
+     eigentlich modal sein soll. */
+  z-index: 20;
 }
 
 .sheet__panel {
