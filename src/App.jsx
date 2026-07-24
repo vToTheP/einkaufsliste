@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   repository as defaultRepository,
@@ -6,6 +6,8 @@ import {
 } from './db/repository.js'
 import { groupByCategory } from './categories.js'
 import { PlusIcon, EditIcon, DeleteIcon } from './icons/index.jsx'
+import TopBar from './TopBar.jsx'
+import ListSheet from './ListSheet.jsx'
 
 // Führt den initialen Persistenz-Load mit dem aktuellen UI-State zusammen, ohne
 // bereits getätigte User-Aktionen zu überschreiben: Löst der Load (z.B. auf
@@ -37,6 +39,8 @@ export default function App({ repository = defaultRepository }) {
   const [editDraft, setEditDraft] = useState('')
   const [editingListId, setEditingListId] = useState(null)
   const [editListDraft, setEditListDraft] = useState('')
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const menuButtonRef = useRef(null)
   // Hat der Nutzer die aktive Liste bereits selbst gewechselt/angelegt, bevor
   // der (asynchrone) Bootstrap-Load aufgelöst hat, ist dessen Ergebnis für
   // Aktiv-Liste + Items veraltet — es darf die Nutzeraktion dann nicht mehr
@@ -222,88 +226,43 @@ export default function App({ repository = defaultRepository }) {
     }
   }
 
+  // Stabile Identität nötig: ListSheet hängt seinen Keydown-Listener nur an
+  // Öffnen/Schließen (nicht an jedes App-Re-Render) — eine bei jedem Render
+  // neu erzeugte Funktion würde den Effekt unnötig neu aufsetzen.
+  const closeSheet = useCallback(() => {
+    setSheetOpen(false)
+    menuButtonRef.current?.focus()
+  }, [])
+
   const activeList = lists.find((list) => list.id === activeListId)
 
   return (
     <main className="app">
-      <header className="app__header">
-        <h1>Einkaufsliste</h1>
-        <label className="app__list-select-label" htmlFor="list-select">
-          Liste
-        </label>
-        <select
-          id="list-select"
-          className="app__list-select"
-          value={activeListId ?? ''}
-          onChange={(event) => switchList(event.target.value)}
-        >
-          {lists.map((list) => (
-            <option key={list.id} value={list.id}>
-              {list.name}
-            </option>
-          ))}
-        </select>
-        {activeList &&
-          (editingListId === activeList.id ? (
-            <form className="app__edit" onSubmit={handleRenameListSubmit}>
-              <input
-                className="app__input"
-                type="text"
-                value={editListDraft}
-                onChange={(event) => setEditListDraft(event.target.value)}
-                aria-label="Listenname bearbeiten"
-                autoFocus
-              />
-              <button className="app__save" type="submit">
-                Speichern
-              </button>
-              <button
-                className="app__cancel"
-                type="button"
-                onClick={cancelEditList}
-              >
-                Abbrechen
-              </button>
-            </form>
-          ) : (
-            <>
-              <button
-                className="app__edit-btn"
-                type="button"
-                onClick={() => startEditList(activeList)}
-                aria-label="Liste umbenennen"
-              >
-                <EditIcon />
-              </button>
-              <button
-                className="app__delete"
-                type="button"
-                onClick={() => deleteList(activeList.id)}
-                disabled={lists.length <= 1}
-                aria-label="Liste löschen"
-              >
-                <DeleteIcon />
-              </button>
-            </>
-          ))}
-        <form className="app__list-form" onSubmit={handleCreateList}>
-          <input
-            className="app__input"
-            type="text"
-            value={listDraft}
-            onChange={(event) => setListDraft(event.target.value)}
-            placeholder="Neue Liste"
-            aria-label="Neue Liste"
-          />
-          <button
-            className="app__add-list"
-            type="submit"
-            aria-label="Liste anlegen"
-          >
-            <PlusIcon />
-          </button>
-        </form>
-      </header>
+      <TopBar
+        listName={activeList?.name ?? ''}
+        sheetOpen={sheetOpen}
+        onOpenMenu={() => setSheetOpen(true)}
+        menuButtonRef={menuButtonRef}
+      />
+
+      <ListSheet
+        open={sheetOpen}
+        onClose={closeSheet}
+        lists={lists}
+        activeListId={activeListId}
+        activeList={activeList}
+        onSwitchList={switchList}
+        listDraft={listDraft}
+        onListDraftChange={setListDraft}
+        onCreateList={handleCreateList}
+        editingListId={editingListId}
+        editListDraft={editListDraft}
+        onEditListDraftChange={setEditListDraft}
+        onStartEditList={startEditList}
+        onCancelEditList={cancelEditList}
+        onRenameListSubmit={handleRenameListSubmit}
+        onDeleteList={deleteList}
+      />
 
       <form className="app__form" onSubmit={handleSubmit}>
         <input

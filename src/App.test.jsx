@@ -50,6 +50,12 @@ async function addItem(name) {
   )
 }
 
+// Listen-Aktionen sitzen seit #98 im Sheet/Drawer; öffnen ist idempotent
+// (App ruft beim erneuten Tap nur setSheetOpen(true) erneut auf).
+function openListMenu() {
+  fireEvent.click(screen.getByRole('button', { name: 'Listen-Menü öffnen' }))
+}
+
 describe('App', () => {
   it('zeigt den Titel', async () => {
     renderApp()
@@ -252,13 +258,16 @@ describe('App – mehrere Listen', () => {
   it('zeigt die aktive Liste in der Listenauswahl', async () => {
     renderApp()
 
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
-    expect(screen.getByRole('combobox', { name: 'Liste' })).toHaveDisplayValue(
-      'Einkaufsliste',
-    )
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
+
+    expect(
+      await screen.findByRole('combobox', { name: 'Liste' }),
+    ).toHaveDisplayValue('Einkaufsliste')
   })
 
   async function createList(name) {
+    openListMenu()
     await submitDraft('Neue Liste', 'Liste anlegen', name, () =>
       screen.findByRole('option', { name: name.trim() }),
     )
@@ -266,7 +275,7 @@ describe('App – mehrere Listen', () => {
 
   it('legt eine neue Liste an, macht sie aktiv und zeigt sie leer', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
     await addItem('Milch')
 
     await createList('Wocheneinkauf')
@@ -281,7 +290,7 @@ describe('App – mehrere Listen', () => {
 
   it('ignoriert eine leere oder nur-Whitespace Listen-Eingabe', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
 
     await createList('')
     await createList('   ')
@@ -294,7 +303,7 @@ describe('App – mehrere Listen', () => {
 
   it('wechselt zwischen Listen und zeigt jeweils die zugeordneten Items', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
     await addItem('Milch')
 
     await createList('Wocheneinkauf')
@@ -312,13 +321,15 @@ describe('App – mehrere Listen', () => {
 
   it('behält die aktive Liste nach einem Reload (Unmount→Remount)', async () => {
     const { unmount } = renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
 
     await createList('Wocheneinkauf')
     await addItem('Bier')
     unmount()
 
     renderApp()
+    await screen.findByRole('heading', { name: 'Wocheneinkauf', level: 1 })
+    openListMenu()
     await screen.findByRole('option', { name: 'Wocheneinkauf' })
 
     expect(
@@ -329,7 +340,8 @@ describe('App – mehrere Listen', () => {
 
   it('benennt die aktive Liste um', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
 
     fireEvent.click(screen.getByRole('button', { name: 'Liste umbenennen' }))
     fireEvent.change(screen.getByLabelText('Listenname bearbeiten'), {
@@ -345,7 +357,8 @@ describe('App – mehrere Listen', () => {
 
   it('ignoriert eine leere Listen-Umbenennung', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
 
     fireEvent.click(screen.getByRole('button', { name: 'Liste umbenennen' }))
     fireEvent.change(screen.getByLabelText('Listenname bearbeiten'), {
@@ -360,7 +373,8 @@ describe('App – mehrere Listen', () => {
 
   it('behält die umbenannte Liste nach einem Reload', async () => {
     const { unmount } = renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
 
     fireEvent.click(screen.getByRole('button', { name: 'Liste umbenennen' }))
     fireEvent.change(screen.getByLabelText('Listenname bearbeiten'), {
@@ -371,6 +385,8 @@ describe('App – mehrere Listen', () => {
     unmount()
 
     renderApp()
+    await screen.findByRole('heading', { name: 'Wochenendeinkauf', level: 1 })
+    openListMenu()
     expect(
       await screen.findByRole('option', { name: 'Wochenendeinkauf' }),
     ).toBeInTheDocument()
@@ -378,14 +394,17 @@ describe('App – mehrere Listen', () => {
 
   it('Guard: der Löschen-Button ist deaktiviert, solange nur eine Liste existiert', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
 
-    expect(screen.getByRole('button', { name: 'Liste löschen' })).toBeDisabled()
+    expect(
+      await screen.findByRole('button', { name: 'Liste löschen' }),
+    ).toBeDisabled()
   })
 
   it('löscht die aktive Liste und macht eine andere Liste aktiv', async () => {
     renderApp()
-    await screen.findByRole('option', { name: 'Einkaufsliste' })
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
     await addItem('Milch')
 
     await createList('Wocheneinkauf')
@@ -499,6 +518,13 @@ describe('App – Kategorien', () => {
 
   it('zeigt Icon-Buttons für Listen-Aktionen (Anlegen/Umbenennen/Löschen)', async () => {
     renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    expect(
+      screen
+        .getByRole('button', { name: 'Listen-Menü öffnen' })
+        .querySelector('svg'),
+    ).toBeInTheDocument()
+    openListMenu()
     await screen.findByRole('option', { name: 'Einkaufsliste' })
 
     expect(
@@ -525,5 +551,108 @@ describe('App – Kategorien', () => {
     expect(
       screen.getByRole('button', { name: 'Milch endgültig entfernen' }),
     ).toHaveTextContent('Endgültig entfernen')
+  })
+})
+
+// Issue #98: Listen-Verwaltung sitzt jetzt in einem Sheet/Drawer statt im
+// Kopfbereich zu stapeln. Verhalten der Aktionen selbst ist unverändert
+// (oben abgedeckt) — hier geht es um Öffnen/Schließen, Fokus und Tastatur.
+describe('App – Sheet/Drawer', () => {
+  it('öffnet das Sheet über den Menü-Button und macht die Listen-Aktionen erreichbar', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    openListMenu()
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Listen-Menü' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Liste' })).toBeInTheDocument()
+  })
+
+  it('fokussiert beim Öffnen ein Element innerhalb des Sheets', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+
+    openListMenu()
+
+    const dialog = await screen.findByRole('dialog', { name: 'Listen-Menü' })
+    await waitFor(() =>
+      expect(dialog).toContainElement(document.activeElement),
+    )
+  })
+
+  it('schließt das Sheet über den Schließen-Button und gibt den Fokus an den Menü-Button zurück', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    const menuButton = screen.getByRole('button', {
+      name: 'Listen-Menü öffnen',
+    })
+    openListMenu()
+    await screen.findByRole('dialog', { name: 'Listen-Menü' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Menü schließen' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(menuButton).toHaveFocus()
+  })
+
+  it('schließt das Sheet über die Escape-Taste und gibt den Fokus zurück', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    const menuButton = screen.getByRole('button', {
+      name: 'Listen-Menü öffnen',
+    })
+    openListMenu()
+    const dialog = await screen.findByRole('dialog', { name: 'Listen-Menü' })
+
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(menuButton).toHaveFocus()
+  })
+
+  it('schließt das Sheet über einen Klick auf den Hintergrund', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
+    const dialog = await screen.findByRole('dialog', { name: 'Listen-Menü' })
+
+    fireEvent.click(dialog.parentElement)
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('hält den Fokus innerhalb des Sheets, wenn am Ende weiter getabbt wird', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
+    const dialog = await screen.findByRole('dialog', { name: 'Listen-Menü' })
+    screen.getByRole('button', { name: 'Liste anlegen' }).focus()
+
+    fireEvent.keyDown(dialog, { key: 'Tab' })
+
+    expect(
+      screen.getByRole('button', { name: 'Menü schließen' }),
+    ).toHaveFocus()
+  })
+
+  it('hält den Fokus innerhalb des Sheets, wenn am Anfang zurück getabbt wird', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
+    const dialog = await screen.findByRole('dialog', { name: 'Listen-Menü' })
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Menü schließen' }),
+      ).toHaveFocus(),
+    )
+
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })
+
+    expect(
+      screen.getByRole('button', { name: 'Liste anlegen' }),
+    ).toHaveFocus()
   })
 })
