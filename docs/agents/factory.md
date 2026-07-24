@@ -96,11 +96,13 @@ bei Vincent. Fast-Merge vs. genaue Prüfung regeln die **Risiko-Tiers** in `CLAU
 - **Notfall-Drosselung passiert automatisch** über PR-Cap und CI-Guardrail.
 - **Visuelle Snapshots nach UI-Änderungen:** Intendierte UI-Änderungen brechen die
   Playwright-Baselines (`e2e/**/*-chromium-linux.png`) — die Fabrik kann das nicht selbst
-  grün bekommen (Baselines nur im chromium-linux-Container erzeugbar). Fix: Workflow
-  **„Update visual snapshots"** (`.github/workflows/update-snapshots.yml`) manuell auf dem
-  PR-Branch auslösen (Actions → Workflow → Branch angeben). Er regeneriert die Baselines im
-  Container und committet sie zurück. Setzt das Secret `SNAPSHOT_PUSH_TOKEN` voraus (s.
-  Checkliste), sonst triggert der Push die e2e-CI nicht neu.
+  grün bekommen (Baselines nur im chromium-linux-Container erzeugbar). Fix: Label
+  **`update-snapshots`** an den PR hängen — die Fabrik setzt es bei sichtbaren UI-Änderungen
+  beim Öffnen des PRs automatisch (s. `/implement-next`). Der gleichnamige Workflow
+  (`.github/workflows/update-snapshots.yml`) regeneriert die Baselines im Container, committet
+  sie zurück auf den PR-Branch und nimmt das Label wieder ab. Fallback ohne PR: Workflow manuell
+  auslösen (Actions → „Update visual snapshots" → Branch angeben). Beide Wege setzen das Secret
+  `SNAPSHOT_PUSH_TOKEN` voraus (s. Checkliste), sonst triggert der Push die e2e-CI nicht neu.
 
 ## Setup-Checkliste (Cloud-Teile — von Vincent einzurichten)
 
