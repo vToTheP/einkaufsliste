@@ -37,9 +37,9 @@ Hat der Slice Commits erzeugt, läuft **vor** dem PR ein In-Session-Review über
 Diff. Das **ersetzt** den früheren `/simplify`-Cleanup-Pass — die Standards-Achse des Reviews
 deckt dieselben Smells ab, der Fix-Pass wendet sie an. Ein Mechanismus statt zwei.
 
-### 1. Review (`mattpocock-skills:code-review`)
+### 1. Review (`code-review`)
 
-- Rufe `mattpocock-skills:code-review` mit **Fixpunkt `main`** auf (die Merge-Base des
+- Rufe `code-review` mit **Fixpunkt `main`** auf (die Merge-Base des
   Slice-Branches). Der Skill fährt zwei **isolierte Sub-Agenten** parallel:
   - **Standards** — folgt der Code den dokumentierten Repo-Konventionen (Wiederverwendung,
     Vereinfachung, Redundanz, Verschachtelung, Benennung, zusammengehörige Logik)?
@@ -85,9 +85,9 @@ STOPP → Backlog-Issue" und die Merge-Policy brechen.
 
 - **Delegiere an einen `Explore`-Sub-Agenten auf Sonnet** (nicht am Hauptmodell hängen lassen —
   Quota, Kernprinzip 8).
-- **Nur Schritt 1 („Explore") von `mattpocock-skills:improve-codebase-architecture`** —
+- **Nur Schritt 1 („Explore") von `improve-codebase-architecture`** —
   **ohne** dessen HTML-Report (Schritt 2) und **ohne** Grilling-Loop (Schritt 3), die sind
-  human-in-the-loop und nicht AFK-tauglich. Vokabular aus `mattpocock-skills:codebase-design`
+  human-in-the-loop und nicht AFK-tauglich. Vokabular aus `codebase-design`
   exakt nutzen: shallow → deep Modul, **Seam**, **Deletion-Test**, **Locality**, **Leverage**.
 - **Scope = nur die im Slice geänderten Dateien** (`git diff --name-only main...HEAD`) — Pococks
   Skill gewichtet selbst kürzlich geänderte Hot-Spots. Keine repetitiven Full-Repo-Scans.
