@@ -36,7 +36,7 @@ jobs:
         id: count
         run: |
           set -euo pipefail
-          count=$(gh issue list --repo "$REPO" --state open \
+          count=$(gh issue list --repo "$REPO" --state open --limit 1000 \
             --label status:ready --json number --jq 'length')
           echo "count=$count" >> "$GITHUB_OUTPUT"
       - name: Reminder auswerten und ggf. senden
