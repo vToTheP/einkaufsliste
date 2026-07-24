@@ -1,8 +1,10 @@
 .app {
   max-width: 32rem;
   margin: 0 auto;
+  /* 5rem reserviert Platz für die fixe Add-Leiste (.app__form), damit die
+     letzten Listeneinträge nicht darunter verschwinden. */
   padding: var(--space-4) var(--space-4)
-    calc(var(--space-4) + env(safe-area-inset-bottom));
+    calc(5rem + env(safe-area-inset-bottom));
 }
 
 .app__header {
@@ -40,9 +42,19 @@
 }
 
 .app__form {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
   display: flex;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4)
+    calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border);
 }
 
 .app__input {
