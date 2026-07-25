@@ -346,12 +346,13 @@ export default function App({ repository = defaultRepository }) {
 
       {recentlyUsedItems.length > 0 && (
         <section className="app__recently-used">
-          <h2>Zuletzt verwendet</h2>
+          <h2 className="app__category-heading">Zuletzt verwendet</h2>
           <ul className="app__recently-used-list">
             {recentlyUsedItems.map((item) => (
               <li key={item.id} className="app__recently-used-item">
                 <span className="app__item-name">{item.name}</span>
                 <button
+                  className="app__reactivate"
                   type="button"
                   onClick={() => reactivateItem(item.id)}
                   aria-label={`${item.name} reaktivieren`}
@@ -359,6 +360,7 @@ export default function App({ repository = defaultRepository }) {
                   Reaktivieren
                 </button>
                 <button
+                  className="app__remove-permanent"
                   type="button"
                   onClick={() => permanentlyRemoveItem(item.id)}
                   aria-label={`${item.name} endgültig entfernen`}
