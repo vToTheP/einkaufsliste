@@ -12,6 +12,7 @@ Die Fabrik besteht aus drei Teilen — zwei im Repo (versioniert), einer in der 
 |---|---|---|
 | `factory-run` | `.claude/commands/factory-run.md` | Vorab-Gate + Start **einer** Slice |
 | Nachschub-Automatik | `.github/workflows/unblock-ready.yml` | hebt abhängige Issues nach Merge auf `status:ready` |
+| Ready-Queue-Reminder | `.github/workflows/ready-queue-reminder.yml` | warnt per ntfy, wenn die `status:ready`-Queue zur Neige geht (#111) |
 | Cron-Routine | Cloud (`/schedule`) | feuert `factory-run` alle 6 h |
 
 **Loop-Modell:** Der Durchsatz entsteht **nicht** durch eine Schleife in einer Session,
@@ -111,6 +112,11 @@ bei Vincent. Fast-Merge vs. genaue Prüfung regeln die **Risiko-Tiers** in `CLAU
       `mattpocock-skills:code-review` in `/implement-next` — keine Cloud-Routine nötig.
 - [ ] **Secret `SNAPSHOT_PUSH_TOKEN`** anlegen (Fine-grained PAT, Contents: Read/Write) —
       damit der „Update visual snapshots"-Workflow pushen kann und die CI erneut triggert.
+- [ ] **Secret `NTFY_TOPIC_URL`** anlegen (voller ntfy-Topic-Endpunkt, z.B.
+      `https://ntfy.sh/<privates-topic>`) — ohne das Secret loggt der
+      Ready-Queue-Reminder nur eine Warnung und sendet nicht. Schwelle optional über die
+      Repo-Variable `READY_QUEUE_THRESHOLD` anpassen (Default: 3, siehe
+      `src/factory/readyQueueReminder.js`).
 - [ ] Nach den ersten Nächten: Verbrauch messen und Cron-Takt / PR-Cap kalibrieren.
 
 ## Projekt 2 & 3 (Replikation)
