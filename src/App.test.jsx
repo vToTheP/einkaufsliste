@@ -5,7 +5,7 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import App from './App.jsx'
 import { createDb } from './db/database.js'
 import { createRepository, DEFAULT_LIST_ID } from './db/repository.js'
@@ -400,6 +400,29 @@ describe('App – mehrere Listen', () => {
     expect(
       await screen.findByRole('button', { name: 'Liste löschen' }),
     ).toBeDisabled()
+  })
+
+  // Regression-Lock für #117: Der Guard „letzte Liste bleibt" muss auch dann
+  // greifen, wenn der Klick den deaktivierten Button umgeht (z.B. Programmier-
+  // fehler in der UI-Schicht) — er darf nicht ausschließlich am `disabled`-
+  // Attribut hängen, sondern muss in der Aktion selbst verankert sein.
+  it('Guard: ein erzwungener Klick auf den deaktivierten Löschen-Button entfernt die letzte Liste nicht', async () => {
+    const removeListSpy = vi.spyOn(repo, 'removeList')
+    renderApp()
+    await screen.findByRole('heading', { name: 'Einkaufsliste', level: 1 })
+    openListMenu()
+
+    const deleteButton = await screen.findByRole('button', {
+      name: 'Liste löschen',
+    })
+    expect(deleteButton).toBeDisabled()
+    deleteButton.disabled = false
+    fireEvent.click(deleteButton)
+
+    expect(removeListSpy).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('combobox', { name: 'Liste' }),
+    ).toHaveDisplayValue('Einkaufsliste')
   })
 
   it('löscht die aktive Liste und macht eine andere Liste aktiv', async () => {
