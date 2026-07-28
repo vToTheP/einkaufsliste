@@ -22,4 +22,25 @@ describe('buildReminderMessage', () => {
   it('funktioniert auch bei einer leeren Queue', () => {
     expect(buildReminderMessage(0)).toBe('Ready-Queue niedrig: 0 Issues — Nachschub anlegen')
   })
+
+  it('nutzt den Default-Schwellwert, wenn threshold undefined ist', () => {
+    expect(buildReminderMessage(2, undefined)).toBe('Ready-Queue niedrig: 2 Issues — Nachschub anlegen')
+    expect(buildReminderMessage(DEFAULT_READY_QUEUE_THRESHOLD, undefined)).toBeNull()
+  })
+
+  it('wirft bei NaN als Schwelle', () => {
+    expect(() => buildReminderMessage(2, NaN)).toThrow('NaN')
+  })
+
+  it('wirft bei Infinity als Schwelle', () => {
+    expect(() => buildReminderMessage(2, Infinity)).toThrow('Infinity')
+  })
+
+  it('wirft bei -Infinity als Schwelle', () => {
+    expect(() => buildReminderMessage(2, -Infinity)).toThrow('-Infinity')
+  })
+
+  it('wirft bei einer nicht-numerischen Schwelle', () => {
+    expect(() => buildReminderMessage(2, 'abc')).toThrow('abc')
+  })
 })
