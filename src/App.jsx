@@ -213,10 +213,13 @@ export default function App({ repository = defaultRepository }) {
     setEditListDraft('')
   }
 
-  // Guard (letzte Liste bleibt): UI verhindert den Löschversuch bereits hier,
-  // bevor er das Repository erreicht.
+  // Guard (letzte Liste bleibt): einzige Quelle für die Regel — speist sowohl
+  // den Abbruch hier als auch den `disabled`-Zustand des Löschen-Buttons in
+  // ListSheet (Issue #117, vormals an beiden Stellen unabhängig ausgeschrieben).
+  const canDeleteActiveList = lists.length > 1
+
   async function deleteList(id) {
-    if (lists.length <= 1) return
+    if (!canDeleteActiveList) return
     userSwitchedListRef.current = true
     const newActiveId = await repository.removeList(id)
     setLists((prev) => prev.filter((list) => list.id !== id))
@@ -262,6 +265,7 @@ export default function App({ repository = defaultRepository }) {
         onCancelEditList={cancelEditList}
         onRenameListSubmit={handleRenameListSubmit}
         onDeleteList={deleteList}
+        canDeleteActiveList={canDeleteActiveList}
       />
 
       <form className="app__form" onSubmit={handleSubmit}>

@@ -26,6 +26,7 @@ export default function ListSheet({
   onCancelEditList,
   onRenameListSubmit,
   onDeleteList,
+  canDeleteActiveList,
 }) {
   const panelRef = useRef(null)
 
@@ -143,7 +144,7 @@ export default function ListSheet({
                 className="app__delete"
                 type="button"
                 onClick={() => onDeleteList(activeList.id)}
-                disabled={lists.length <= 1}
+                disabled={!canDeleteActiveList}
                 aria-label="Liste löschen"
               >
                 <DeleteIcon />
