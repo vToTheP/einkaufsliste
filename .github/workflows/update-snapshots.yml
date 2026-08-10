@@ -94,7 +94,7 @@ jobs:
       # erfolgreich war — schlägt sie fehl, bleibt das Label als sichtbares Signal.
       - name: Verbrauchtes update-snapshots-Label entfernen
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.removeLabel({
