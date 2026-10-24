@@ -14,7 +14,13 @@ const threshold = process.env.READY_QUEUE_THRESHOLD
   ? Number(process.env.READY_QUEUE_THRESHOLD)
   : undefined
 
-const message = buildReminderMessage(count, threshold)
+let message
+try {
+  message = buildReminderMessage(count, threshold)
+} catch {
+  console.error(`READY_QUEUE_THRESHOLD ist keine gültige Zahl: "${process.env.READY_QUEUE_THRESHOLD}"`)
+  process.exit(1)
+}
 
 if (!message) {
   console.log(`Ready-Queue ausreichend gefüllt (${count}) — keine Benachrichtigung.`)
